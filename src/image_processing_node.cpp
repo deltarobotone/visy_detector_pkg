@@ -130,7 +130,7 @@ public:
     imagework = cv_ptr->image.clone();
     imagesrc = cv_ptr->image.clone();
 
-    if(check < 10 )
+    if(check == 0)
     {
       statusBar.request.ctrl = statusBar.request.FLOW_ONE_FREE_CW;
       statusBar.request.r = 0;
@@ -139,7 +139,10 @@ public:
       statusBar.request.w = 255;
 
       statusBarClient.call(statusBar);
+    }
 
+    if(check > 5 && check < 20)
+    {
       cv::cvtColor(imagework, imagehsv, CV_BGR2HSV);
 
       split(imagehsv, imagesplit);
@@ -210,7 +213,6 @@ public:
         circle(imagesrc, beltpoints[i],1, Scalar(255,0,0), 4, 8);
         for( size_t j = 0; j < 4; j++ )line( imagesrc, beltpoints[j], beltpoints[(j+1)%4], Scalar(0,255,0), 4, 8 );
       }
-      check++;
       //--cv::imshow(OPENCV_WINDOW4, imagesrc);
       if(check == 10)
       {
@@ -220,7 +222,7 @@ public:
         //cv::destroyWindow(OPENCV_WINDOW4);
       }
     }
-    else {
+    else if(check > 20) {
 
       start = std::chrono::system_clock::now();
 
@@ -337,22 +339,22 @@ public:
           circle(imagesrc, MC, 4, Scalar(255, 0, 0), 4, 8, 0);
         }
 
-	
-      }
-      if(contours.size()==0)
-	{
-          statusBar.request.ctrl = statusBar.request.FLOW_DOUBLE_TOP;
-          statusBar.request.r = 0;
-          statusBar.request.g = 255;
-          statusBar.request.b = 0;
-          statusBar.request.w = 0;
 
-          statusBarClient.call(statusBar);
-	}
+      }
+      if(contours.size()==0 && statusBar.request.ctrl != statusBar.request.FLOW_DOUBLE_TOP)
+      {
+        statusBar.request.ctrl = statusBar.request.FLOW_DOUBLE_TOP;
+        statusBar.request.r = 0;
+        statusBar.request.g = 255;
+        statusBar.request.b = 0;
+        statusBar.request.w = 0;
+
+        statusBarClient.call(statusBar);
+      }
       //--cv::imshow(OPENCV_WINDOW1, imagesrc);
 
     }
-
+    check++;
     cv::waitKey(3);
   }
 };

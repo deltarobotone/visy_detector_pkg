@@ -2,11 +2,13 @@
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
+#include <std_msgs/Float32MultiArray.h>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/opencv.hpp>
 #include <vector>
 #include <chrono>
+#include "visy_detector_pkg/DetectConveyorSystem.h"
 
 static const std::string OPENCV_WINDOW1 = "Image window1";
 static const std::string OPENCV_WINDOW2 = "Image window2";
@@ -34,24 +36,51 @@ class ConveyorDetectorNode
   uint counter = 0;
   chrono::time_point<std::chrono::system_clock> start, end, latenz_start, latenz_end;
   Point2f MC, MC_PRE;
+  ros::ServiceServer detectConveyorSystemService;
+  ros::Publisher conveyorSystemRectPub;
+  std_msgs::Float32MultiArray conveyorSystemRect;
 
 public:
   ConveyorDetectorNode(): it_(nh_)
   {
-    image_sub_ = it_.subscribe("/raspicam_node/image", 1, &ConveyorDetectorNode::imageCb, this);
+    detectConveyorSystemService = nh_.advertiseService("detect_conveyor_system", &ConveyorDetectorNode::detectConveyorSystemCB,this);
+    conveyorSystemRectPub = nh_.advertise<std_msgs::Float32MultiArray>("conveyor_system_rect", 1);
+  }
+  ~ConveyorDetectorNode()
+  {
+  }
+
+  bool detectConveyorSystemCB(visy_detector_pkg::DetectConveyorSystem::Request  &req, visy_detector_pkg::DetectConveyorSystem::Response &res)
+  {
     cv::namedWindow(OPENCV_WINDOW1);
     cv::namedWindow(OPENCV_WINDOW2);
     cv::namedWindow(OPENCV_WINDOW3);
     cv::namedWindow(OPENCV_WINDOW4);
     cv::namedWindow(OPENCV_WINDOW5);
-  }
-  ~ConveyorDetectorNode()
-  {
+    image_sub_ = it_.subscribe("/raspicam_node/image", 1, &ConveyorDetectorNode::imageCb, this);
+    counter = 0;
+
+    while(counter<100)
+    {
+      ros::spinOnce();
+    }
+    image_sub_.shutdown();
+
+    conveyorSystemRect.data.clear();
+
+    for(auto const& p:beltpoints)
+    {
+      conveyorSystemRect.data.push_back(p.x);
+      conveyorSystemRect.data.push_back(p.y);
+    }
+
     cv::destroyWindow(OPENCV_WINDOW1);
     cv::destroyWindow(OPENCV_WINDOW2);
     cv::destroyWindow(OPENCV_WINDOW3);
     cv::destroyWindow(OPENCV_WINDOW4);
     cv::destroyWindow(OPENCV_WINDOW5);
+
+    return true;
   }
 
   void imageCb(const sensor_msgs::ImageConstPtr& msg)
@@ -70,8 +99,9 @@ public:
     imagework = cv_ptr->image.clone();
     imagesrc = cv_ptr->image.clone();
 
+    ROS_INFO("%d", counter+1);
 
-    if(check > 5 && check < 100)
+    if(counter<100)
     {
       cv::cvtColor(imagework, imagehsv, CV_BGR2HSV);
 
@@ -192,16 +222,13 @@ public:
         for( size_t j = 0; j < 4; j++ )line( imagesrc, beltpoints[j], beltpoints[(j+1)%4], Scalar(0,255,0), 4, 8 );
       }
       cv::imshow(OPENCV_WINDOW5, imagesrc);
-      if(check == 10)
-      {
-        //cv::destroyWindow(OPENCV_WINDOW1);
-        //cv::destroyWindow(OPENCV_WINDOW2);
-        //cv::destroyWindow(OPENCV_WINDOW3);
-        //cv::destroyWindow(OPENCV_WINDOW4);
-      }
+      counter++;
     }
-    check++;
     cv::waitKey(3);
+  }
+
+  void step(){
+    conveyorSystemRectPub.publish(conveyorSystemRect);
   }
 };
 
@@ -209,6 +236,17 @@ int main(int argc, char** argv)
 {
   ros::init(argc, argv, "conveyor_detector_node");
   ConveyorDetectorNode conveyorDetectorNode;
-  ros::spin();
+
+  ros::Rate loop_rate(10);
+
+  while (ros::ok())
+  {
+    conveyorDetectorNode.step();
+
+    ros::spinOnce();
+
+    loop_rate.sleep();
+
+  }
   return 0;
 }

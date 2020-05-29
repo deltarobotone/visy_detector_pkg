@@ -1,0 +1,6 @@
+#request fields
+string req
+---
+#response fields
+string res
+

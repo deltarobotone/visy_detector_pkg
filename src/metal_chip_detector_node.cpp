@@ -2,11 +2,14 @@
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
+#include <std_msgs/Float32MultiArray.h>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/opencv.hpp>
 #include <vector>
 #include <chrono>
+#include "visy_detector_pkg/StartMetalChipDetector.h"
+#include "visy_detector_pkg/StopMetalChipDetector.h"
 
 static const std::string OPENCV_WINDOW1 = "Image window1";
 static const std::string OPENCV_WINDOW2 = "Image window2";
@@ -35,25 +38,41 @@ class MetalChipDetectorNode
   uint counter = 0;
   chrono::time_point<std::chrono::system_clock> start, end, latenz_start, latenz_end;
   ros::ServiceClient statusBarClient, lightRingClient;
+  ros::ServiceServer startMetalChipDetectorService,stopMetalChipDetectorService;
+  ros::Subscriber conveyorSystemRectsub;
   Point2f MC, MC_PRE;
 
 public:
   MetalChipDetectorNode(): it_(nh_)
   {
     image_sub_ = it_.subscribe("/raspicam_node/image", 1, &MetalChipDetectorNode::imageCb, this);
+    conveyorSystemRectsub = nh_.subscribe("conveyor_system_rect", 1, &MetalChipDetectorNode::conveyorSystemRectCb,this);
+    startMetalChipDetectorService = nh_.advertiseService("start_metalchip_detector", &MetalChipDetectorNode::startMetalChipDetectorCB,this);
+    stopMetalChipDetectorService = nh_.advertiseService("stop_metalchip_detector", &MetalChipDetectorNode::stopMetalChipDetectorCB,this);
+  }
+  ~MetalChipDetectorNode()
+  {
+  }
+
+  bool startMetalChipDetectorCB(visy_detector_pkg::StartMetalChipDetector::Request  &req, visy_detector_pkg::StartMetalChipDetector::Response &res)
+  {
     cv::namedWindow(OPENCV_WINDOW1);
     cv::namedWindow(OPENCV_WINDOW2);
     cv::namedWindow(OPENCV_WINDOW3);
     cv::namedWindow(OPENCV_WINDOW4);
     cv::namedWindow(OPENCV_WINDOW5);
+    image_sub_ = it_.subscribe("/raspicam_node/image", 1, &MetalChipDetectorNode::imageCb, this);
+    return true;
   }
-  ~MetalChipDetectorNode()
+  bool stopMetalChipDetectorCB(visy_detector_pkg::StopMetalChipDetector::Request  &req, visy_detector_pkg::StopMetalChipDetector::Response &res)
   {
+    image_sub_.shutdown();
     cv::destroyWindow(OPENCV_WINDOW1);
     cv::destroyWindow(OPENCV_WINDOW2);
     cv::destroyWindow(OPENCV_WINDOW3);
     cv::destroyWindow(OPENCV_WINDOW4);
     cv::destroyWindow(OPENCV_WINDOW5);
+    return true;
   }
 
   void findColours(Mat &hsv, int &colour)
@@ -109,6 +128,16 @@ public:
     if (hue >= 15 && hue < 45) colour = 2;
     //colour=3 blau
     if (hue >= 100 && hue < 130) colour = 3;
+  }
+  void conveyorSystemRectCb(const std_msgs::Float32MultiArrayConstPtr& msg)
+  {
+    for(size_t i = 0; i<msg->data.size(); i+=2)
+    {
+      Point2f p;
+      p.x = msg->data.at(i);
+      p.y = msg->data.at(i+1);
+      beltpoints.push_back(p);
+    }
   }
 
   void imageCb(const sensor_msgs::ImageConstPtr& msg)

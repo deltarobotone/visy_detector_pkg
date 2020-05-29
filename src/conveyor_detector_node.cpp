@@ -60,7 +60,7 @@ public:
     image_sub_ = it_.subscribe("/raspicam_node/image", 1, &ConveyorDetectorNode::imageCb, this);
     counter = 0;
 
-    while(counter<100)
+    while(counter<10)
     {
       ros::spinOnce();
     }
@@ -79,7 +79,7 @@ public:
     cv::destroyWindow(OPENCV_WINDOW3);
     cv::destroyWindow(OPENCV_WINDOW4);
     cv::destroyWindow(OPENCV_WINDOW5);
-
+    conveyorSystemRectPub.publish(conveyorSystemRect);
     return true;
   }
 
@@ -101,7 +101,7 @@ public:
 
     ROS_INFO("%d", counter+1);
 
-    if(counter<100)
+    if(counter<10)
     {
       cv::cvtColor(imagework, imagehsv, CV_BGR2HSV);
 
@@ -236,8 +236,8 @@ int main(int argc, char** argv)
 {
   ros::init(argc, argv, "conveyor_detector_node");
   ConveyorDetectorNode conveyorDetectorNode;
-
-  ros::Rate loop_rate(10);
+  ros::spin();
+  /*ros::Rate loop_rate(10);
 
   while (ros::ok())
   {
@@ -247,6 +247,6 @@ int main(int argc, char** argv)
 
     loop_rate.sleep();
 
-  }
+  }*/
   return 0;
 }

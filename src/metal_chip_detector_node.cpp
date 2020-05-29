@@ -45,7 +45,6 @@ class MetalChipDetectorNode
 public:
   MetalChipDetectorNode(): it_(nh_)
   {
-    image_sub_ = it_.subscribe("/raspicam_node/image", 1, &MetalChipDetectorNode::imageCb, this);
     conveyorSystemRectsub = nh_.subscribe("conveyor_system_rect", 1, &MetalChipDetectorNode::conveyorSystemRectCb,this);
     startMetalChipDetectorService = nh_.advertiseService("start_metalchip_detector", &MetalChipDetectorNode::startMetalChipDetectorCB,this);
     stopMetalChipDetectorService = nh_.advertiseService("stop_metalchip_detector", &MetalChipDetectorNode::stopMetalChipDetectorCB,this);

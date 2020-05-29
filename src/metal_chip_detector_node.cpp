@@ -155,108 +155,107 @@ public:
     imagework = cv_ptr->image.clone();
     imagesrc = cv_ptr->image.clone();
 
-    if(check > 100) {
+    start = std::chrono::system_clock::now();
 
-      start = std::chrono::system_clock::now();
+    cv::Rect roi(beltpoints[0],beltpoints[2]);
 
-      cv::Rect roi(beltpoints[0],beltpoints[2]);
+    imagework = imagesrc(roi);
+    imagesrc = imagework.clone();
 
-      imagework = imagesrc(roi);
-      imagesrc = imagework.clone();
+    cv::cvtColor(imagework, imagehsv, CV_BGR2HSV);
 
-      cv::cvtColor(imagework, imagehsv, CV_BGR2HSV);
+    split(imagehsv, imagesplit);
 
-      split(imagehsv, imagesplit);
+    saturation = imagesplit[1].clone();
+    saturation.convertTo(saturationf32, CV_32FC1, 1. / 255);
 
-      saturation = imagesplit[1].clone();
-      saturation.convertTo(saturationf32, CV_32FC1, 1. / 255);
+    value = imagesplit[2].clone();
+    value.convertTo(value32, CV_32FC1, 1. / 255);
 
-      value = imagesplit[2].clone();
-      value.convertTo(value32, CV_32FC1, 1. / 255);
+    add(value32, saturationf32, chroma);
 
-      add(value32, saturationf32, chroma);
+    chroma.convertTo(chroma, CV_8UC1, 200);
 
-      chroma.convertTo(chroma, CV_8UC1, 200);
+    imagework = chroma.clone();
 
-      imagework = chroma.clone();
+    cv::imshow(OPENCV_WINDOW2, imagework);
 
-      cv::imshow(OPENCV_WINDOW2, imagework);
+    //cv::adaptiveThreshold(imagework,imagework,255,cv::ADAPTIVE_THRESH_GAUSSIAN_C,cv::THRESH_BINARY,7,2);
+    cv::adaptiveThreshold(imagework,imagework,255,cv::ADAPTIVE_THRESH_GAUSSIAN_C,cv::THRESH_BINARY,5,2);
 
-      //cv::adaptiveThreshold(imagework,imagework,255,cv::ADAPTIVE_THRESH_GAUSSIAN_C,cv::THRESH_BINARY,7,2);
-      cv::adaptiveThreshold(imagework,imagework,255,cv::ADAPTIVE_THRESH_GAUSSIAN_C,cv::THRESH_BINARY,5,2);
+    cv::imshow(OPENCV_WINDOW3, imagework);
 
-      cv::imshow(OPENCV_WINDOW3, imagework);
+    //cv::Mat Element = getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(20, 20), cv::Point(-1, -1));
+    cv::Mat Element = getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(8, 8), cv::Point(-1, -1));
 
-      //cv::Mat Element = getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(20, 20), cv::Point(-1, -1));
-      cv::Mat Element = getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(8, 8), cv::Point(-1, -1));
+    cv::erode(imagework, imagework, Element);
+    cv::dilate(imagework, imagework, Element);
 
-      cv::erode(imagework, imagework, Element);
-      cv::dilate(imagework, imagework, Element);
+    //medianBlur(imagework, imagework, 11);
+    medianBlur(imagework, imagework, 3);
 
-      //medianBlur(imagework, imagework, 11);
-      medianBlur(imagework, imagework, 3);
+    cv::imshow(OPENCV_WINDOW4, imagework);
 
-      cv::imshow(OPENCV_WINDOW4, imagework);
+    std::vector<std::vector<cv::Point> > contours;
+    std::vector<cv::Vec4i> hierarchy;
+    cv::findContours( imagework, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE );
 
-      std::vector<std::vector<cv::Point> > contours;
-      std::vector<cv::Vec4i> hierarchy;
-      cv::findContours( imagework, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE );
-
-      for( size_t i = 0; i< contours.size(); i++ ){
-        Scalar color = Scalar(255,255,255);
-        drawContours( imagesrc, contours, i, color, 2, 8, hierarchy, 0, Point() );
-      }
-
-      double a, l, formf;
-
-      for( size_t i = 0; i< contours.size(); i++ ){
-        a = contourArea(contours[i]);
-        l = arcLength(contours[i], true);
-
-        formf = ((4 * 3.141 * a) / (l*l));
-
-        //ROS_ERROR("%f",a);
-
-        //if (formf > 0.84 && formf < 0.92 && a > 25000.0)
-        if (formf > 0.80 && formf < 0.95 && a > 3000.0)
-        {
-          Moments M;
-          M = moments(contours[i]);
-
-          Point2f MC = Point2f(M.m10 / M.m00, M.m01 / M.m00);
-
-          int colour = 0;
-          RotatedRect rects = minAreaRect(contours[i]);
-
-          getRectSubPix(imagehsv, rects.size, rects.center, imagework);
-          findColours(imagework, colour);
-
-          counter++;
-
-          double x_diff = abs(MC.x - MC_PRE.x);
-
-          MC_PRE = MC;
-
-          int latenz_seconds = std::chrono::duration_cast<std::chrono::milliseconds>(start-end).count();
-
-          //cout << "latenz: " << latenz_seconds << endl;
-
-          //cout << "posdiff: " << x_diff << endl;
-
-          double v = x_diff / latenz_seconds;
-
-          //cout << "velocity: " << v << endl;
-
-          end = std::chrono::system_clock::now();
-
-
-          circle(imagesrc, MC, 4, Scalar(255, 0, 0), 4, 8, 0);
-        }
-      }
-      cv::imshow(OPENCV_WINDOW1, imagesrc);
-
+    for( size_t i = 0; i< contours.size(); i++ ){
+      Scalar color = Scalar(255,255,255);
+      drawContours( imagesrc, contours, i, color, 2, 8, hierarchy, 0, Point() );
     }
-    check++;
+
+    double a, l, formf;
+
+    for( size_t i = 0; i< contours.size(); i++ ){
+      a = contourArea(contours[i]);
+      l = arcLength(contours[i], true);
+
+      formf = ((4 * 3.141 * a) / (l*l));
+
+      //ROS_ERROR("%f",a);
+
+      //if (formf > 0.84 && formf < 0.92 && a > 25000.0)
+      if (formf > 0.80 && formf < 0.95 && a > 3000.0)
+      {
+        Moments M;
+        M = moments(contours[i]);
+
+        Point2f MC = Point2f(M.m10 / M.m00, M.m01 / M.m00);
+
+        int colour = 0;
+        RotatedRect rects = minAreaRect(contours[i]);
+
+        getRectSubPix(imagehsv, rects.size, rects.center, imagework);
+        findColours(imagework, colour);
+
+        if(colour == 1) ROS_ERROR("rot");
+        if(colour == 2) ROS_ERROR("gelb");
+        if(colour == 3) ROS_ERROR("blau");
+        counter++;
+
+        double x_diff = abs(MC.x - MC_PRE.x);
+
+        MC_PRE = MC;
+
+        int latenz_seconds = std::chrono::duration_cast<std::chrono::milliseconds>(start-end).count();
+
+        //cout << "latenz: " << latenz_seconds << endl;
+
+        //cout << "posdiff: " << x_diff << endl;
+
+        double v = x_diff / latenz_seconds;
+
+        //cout << "velocity: " << v << endl;
+
+        end = std::chrono::system_clock::now();
+
+        circle(imagesrc, MC, 4, Scalar(255, 0, 0), 4, 8, 0);
+      }
+    }
+    cv::imshow(OPENCV_WINDOW1, imagesrc);
+
+
     cv::waitKey(3);
   }
 };

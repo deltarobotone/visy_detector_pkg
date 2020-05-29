@@ -72,6 +72,7 @@ public:
     {
       conveyorSystemRect.data.push_back(p.x);
       conveyorSystemRect.data.push_back(p.y);
+      conveyorSystemRectPub.publish(conveyorSystemRect);
     }
 
     cv::destroyWindow(OPENCV_WINDOW1);
@@ -79,7 +80,7 @@ public:
     cv::destroyWindow(OPENCV_WINDOW3);
     cv::destroyWindow(OPENCV_WINDOW4);
     cv::destroyWindow(OPENCV_WINDOW5);
-    conveyorSystemRectPub.publish(conveyorSystemRect);
+
     return true;
   }
 
@@ -182,44 +183,44 @@ public:
         beltpoints.push_back(points[1]);
         beltpoints.push_back(points[2]);
         beltpoints.push_back(points[3]);
-      }
 
-      float max = 0;
-      float min = rows;
+        float max = 0;
+        float min = rows;
 
-      for( size_t i = 0; i< pointsR.size(); i++ )
-      {
-        if(pointsR[i].y > max) {
-          max = pointsR[i].y;
-          beltpoints.at(0) = pointsR[i];
+        for( size_t i = 0; i< pointsR.size(); i++ )
+        {
+          if(pointsR[i].y > max) {
+            max = pointsR[i].y;
+            beltpoints.at(0) = pointsR[i];
+          }
+
+          if(pointsR[i].y < min) {
+            min = pointsR[i].y;
+            beltpoints.at(1) = pointsR[i];
+          }
         }
 
-        if(pointsR[i].y < min) {
-          min = pointsR[i].y;
-          beltpoints.at(1) = pointsR[i];
+        max = 0;
+        min = rows;
+
+        for( size_t i = 0; i< pointsL.size(); i++ )
+        {
+          if(pointsL[i].y > max) {
+            max = pointsL[i].y;
+            beltpoints.at(3) = pointsL[i];
+          }
+
+          if(pointsL[i].y < min) {
+            min = pointsL[i].y;
+            beltpoints.at(2) = pointsL[i];
+          }
         }
-      }
 
-      max = 0;
-      min = rows;
 
-      for( size_t i = 0; i< pointsL.size(); i++ )
-      {
-        if(pointsL[i].y > max) {
-          max = pointsL[i].y;
-          beltpoints.at(3) = pointsL[i];
+        for ( size_t i = 0; i< points.size(); i++ ){
+          circle(imagesrc, beltpoints[i],1, Scalar(255,0,0), 4, 8);
+          for( size_t j = 0; j < 4; j++ )line( imagesrc, beltpoints[j], beltpoints[(j+1)%4], Scalar(0,255,0), 4, 8 );
         }
-
-        if(pointsL[i].y < min) {
-          min = pointsL[i].y;
-          beltpoints.at(2) = pointsL[i];
-        }
-      }
-
-
-      for ( size_t i = 0; i< points.size(); i++ ){
-        circle(imagesrc, beltpoints[i],1, Scalar(255,0,0), 4, 8);
-        for( size_t j = 0; j < 4; j++ )line( imagesrc, beltpoints[j], beltpoints[(j+1)%4], Scalar(0,255,0), 4, 8 );
       }
       cv::imshow(OPENCV_WINDOW5, imagesrc);
       counter++;

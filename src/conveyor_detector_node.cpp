@@ -2,13 +2,12 @@
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
-#include <std_msgs/Float32MultiArray.h>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/opencv.hpp>
 #include <vector>
-#include <chrono>
 #include "visy_detector_pkg/DetectConveyorSystem.h"
+#include "visy_detector_pkg/ConveyorSystem.h"
 
 static const std::string OPENCV_WINDOW1 = "Image window1";
 static const std::string OPENCV_WINDOW2 = "Image window2";
@@ -23,31 +22,21 @@ class ConveyorDetectorNode
   ros::NodeHandle nh_;
   image_transport::ImageTransport it_;
   image_transport::Subscriber image_sub_;
-  cv::Mat imagework;
-  cv::Mat imagesrc;
-  cv::Mat imagegray;
-  cv::Mat imagehsv;
+  cv::Mat imagework,imagesrc,imagegray,imagehsv;
+  cv::Mat saturation, saturationf32,value, value32,chroma;
   std::vector<cv::Mat> imagesplit;
-  cv::Mat saturation, saturationf32;
-  cv::Mat value, value32;
-  cv::Mat chroma;
-  int check = 0;
-  vector<Point2f> beltpoints;
+  vector<Point2d> conveyorSystemRect;
   uint counter = 0;
-  chrono::time_point<std::chrono::system_clock> start, end, latenz_start, latenz_end;
-  Point2f MC, MC_PRE;
+  Point2d centralLast;
   ros::ServiceServer detectConveyorSystemService;
   ros::Publisher conveyorSystemRectPub;
-  std_msgs::Float32MultiArray conveyorSystemRect;
 
 public:
-  ConveyorDetectorNode(): it_(nh_)
-  {
+  ConveyorDetectorNode(): it_(nh_){
     detectConveyorSystemService = nh_.advertiseService("detect_conveyor_system", &ConveyorDetectorNode::detectConveyorSystemCB,this);
-    conveyorSystemRectPub = nh_.advertise<std_msgs::Float32MultiArray>("conveyor_system_rect", 1);
+    conveyorSystemRectPub = nh_.advertise<visy_detector_pkg::ConveyorSystem>("conveyor_system_rect", 1);
   }
-  ~ConveyorDetectorNode()
-  {
+  ~ConveyorDetectorNode(){
   }
 
   bool detectConveyorSystemCB(visy_detector_pkg::DetectConveyorSystem::Request  &req, visy_detector_pkg::DetectConveyorSystem::Response &res)
@@ -57,23 +46,22 @@ public:
     cv::namedWindow(OPENCV_WINDOW3);
     cv::namedWindow(OPENCV_WINDOW4);
     cv::namedWindow(OPENCV_WINDOW5);
-    image_sub_ = it_.subscribe("/raspicam_node/image", 1, &ConveyorDetectorNode::imageCb, this);
-    counter = 0;
 
-    while(counter<10)
-    {
+    image_sub_ = it_.subscribe("/raspicam_node/image", 1, &ConveyorDetectorNode::imageCb, this);
+
+    counter = 0;
+    while(counter<10){
       ros::spinOnce();
     }
     image_sub_.shutdown();
 
-    conveyorSystemRect.data.clear();
+    visy_detector_pkg::ConveyorSystem conveyorSystemRectMsg;
 
-    for(auto const& p:beltpoints)
-    {
-      conveyorSystemRect.data.push_back(p.x);
-      conveyorSystemRect.data.push_back(p.y);
-      conveyorSystemRectPub.publish(conveyorSystemRect);
+    for(auto & points:conveyorSystemRectMsg.rect){
+      points.x = conveyorSystemRect.at(0).x;
     }
+
+    conveyorSystemRectPub.publish(conveyorSystemRectMsg);
 
     cv::destroyWindow(OPENCV_WINDOW1);
     cv::destroyWindow(OPENCV_WINDOW2);
@@ -84,18 +72,12 @@ public:
     return true;
   }
 
-  void imageCb(const sensor_msgs::ImageConstPtr& msg)
+  void imageCb(const sensor_msgs::ImageConstPtr& image)
   {
     cv_bridge::CvImagePtr cv_ptr;
-    try
-    {
-      cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
-    }
-    catch (cv_bridge::Exception& e)
-    {
-      ROS_ERROR("cv_bridge exception: %s", e.what());
-      return;
-    }
+
+    try{cv_ptr = cv_bridge::toCvCopy(image, sensor_msgs::image_encodings::BGR8);}
+    catch (cv_bridge::Exception& e){return;}
 
     imagework = cv_ptr->image.clone();
     imagesrc = cv_ptr->image.clone();
@@ -128,7 +110,7 @@ public:
       cv::imshow(OPENCV_WINDOW2, imagework);
 
       //cv::Mat Element = getStructuringElement(cv::MORPH_RECT, cv::Size(20, 20), cv::Point(-1, -1));
-      cv::Mat Element = getStructuringElement(cv::MORPH_RECT, cv::Size(8, 8), cv::Point(-1, -1));
+      cv::Mat Element = getStructuringElement(cv::MORPH_RECT, cv::Size(4, 4), cv::Point(-1, -1));
 
       cv::erode(imagework, imagework, Element);
       cv::dilate(imagework, imagework, Element);
@@ -136,7 +118,7 @@ public:
       cv::imshow(OPENCV_WINDOW3, imagework);
 
       //Element = getStructuringElement(cv::MORPH_RECT, cv::Size(500, 15), cv::Point(-1, -1));
-      Element = getStructuringElement(cv::MORPH_RECT, cv::Size(180, 6), cv::Point(-1, -1));
+      Element = getStructuringElement(cv::MORPH_RECT, cv::Size(140, 4), cv::Point(-1, -1));
 
       cv::erode(imagework, imagework, Element);
       cv::dilate(imagework, imagework, Element);
@@ -148,7 +130,7 @@ public:
 
       std::vector<std::vector<cv::Point> > contours;
       std::vector<cv::Vec4i> hierarchy;
-      cv::findContours( imagework, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE );
+      cv::findContours(imagework, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
 
       vector<RotatedRect> minRect( contours.size() );
       vector<Point2f>points;
@@ -171,18 +153,17 @@ public:
 
       vector<Point2f>pointsR;
       vector<Point2f>pointsL;
-      for( size_t i = 0; i< points.size(); i++ )
-      {
+      for( size_t i = 0; i< points.size(); i++ ){
         if(points[i].x < cols/2.0F) pointsL.push_back(points[i]);
         else pointsR.push_back(points[i]);
       }
 
       if(points.size()==8)
       {
-        beltpoints.push_back(points[0]);
-        beltpoints.push_back(points[1]);
-        beltpoints.push_back(points[2]);
-        beltpoints.push_back(points[3]);
+        conveyorSystemRect.push_back(points[0]);
+        conveyorSystemRect.push_back(points[1]);
+        conveyorSystemRect.push_back(points[2]);
+        conveyorSystemRect.push_back(points[3]);
 
         float max = 0;
         float min = rows;
@@ -191,12 +172,12 @@ public:
         {
           if(pointsR[i].y > max) {
             max = pointsR[i].y;
-            beltpoints.at(0) = pointsR[i];
+            conveyorSystemRect.at(0) = pointsR[i];
           }
 
           if(pointsR[i].y < min) {
             min = pointsR[i].y;
-            beltpoints.at(1) = pointsR[i];
+            conveyorSystemRect.at(1) = pointsR[i];
           }
         }
 
@@ -207,29 +188,24 @@ public:
         {
           if(pointsL[i].y > max) {
             max = pointsL[i].y;
-            beltpoints.at(3) = pointsL[i];
+            conveyorSystemRect.at(3) = pointsL[i];
           }
 
           if(pointsL[i].y < min) {
             min = pointsL[i].y;
-            beltpoints.at(2) = pointsL[i];
+            conveyorSystemRect.at(2) = pointsL[i];
           }
         }
 
-
         for ( size_t i = 0; i< points.size(); i++ ){
-          circle(imagesrc, beltpoints[i],1, Scalar(255,0,0), 4, 8);
-          for( size_t j = 0; j < 4; j++ )line( imagesrc, beltpoints[j], beltpoints[(j+1)%4], Scalar(0,255,0), 4, 8 );
+          circle(imagesrc, conveyorSystemRect[i],1, Scalar(255,0,0), 4, 8);
+          for( size_t j = 0; j < 4; j++ )line( imagesrc, conveyorSystemRect[j], conveyorSystemRect[(j+1)%4], Scalar(0,255,0), 4, 8 );
         }
       }
       cv::imshow(OPENCV_WINDOW5, imagesrc);
       counter++;
     }
-    cv::waitKey(3);
-  }
-
-  void step(){
-    conveyorSystemRectPub.publish(conveyorSystemRect);
+    cv::waitKey(1);
   }
 };
 
@@ -238,16 +214,5 @@ int main(int argc, char** argv)
   ros::init(argc, argv, "conveyor_detector_node");
   ConveyorDetectorNode conveyorDetectorNode;
   ros::spin();
-  /*ros::Rate loop_rate(10);
-
-  while (ros::ok())
-  {
-    conveyorDetectorNode.step();
-
-    ros::spinOnce();
-
-    loop_rate.sleep();
-
-  }*/
   return 0;
 }

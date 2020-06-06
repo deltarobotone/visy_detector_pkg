@@ -201,7 +201,7 @@ public:
       }
     }
     cv::imshow(OPENCV_WINDOW1, imagesrc);
-    cv::waitKey(1);
+    cv::waitKey(3);
   }
 };
 

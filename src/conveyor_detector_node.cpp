@@ -205,7 +205,7 @@ public:
       cv::imshow(OPENCV_WINDOW5, imagesrc);
       counter++;
     }
-    cv::waitKey(1);
+    cv::waitKey(3);
   }
 };
 

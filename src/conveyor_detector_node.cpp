@@ -58,7 +58,9 @@ public:
     visy_detector_pkg::ConveyorSystem conveyorSystemRectMsg;
 
     for(auto & points:conveyorSystemRectMsg.rect){
-      points.x = conveyorSystemRect.at(0).x;
+      points.x = conveyorSystemRect.front().x;
+      points.y = conveyorSystemRect.front().y;
+      conveyorSystemRect.erase(conveyorSystemRect.begin());
     }
 
     conveyorSystemRectPub.publish(conveyorSystemRectMsg);

@@ -137,18 +137,15 @@ public:
 
     cv::imshow(OPENCV_WINDOW2, imagework);
 
-    //cv::adaptiveThreshold(imagework,imagework,255,cv::ADAPTIVE_THRESH_GAUSSIAN_C,cv::THRESH_BINARY,7,2);
     cv::adaptiveThreshold(imagework,imagework,255,cv::ADAPTIVE_THRESH_GAUSSIAN_C,cv::THRESH_BINARY,5,2);
 
     cv::imshow(OPENCV_WINDOW3, imagework);
 
-    //cv::Mat Element = getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(20, 20), cv::Point(-1, -1));
     cv::Mat Element = getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(8, 8), cv::Point(-1, -1));
 
     cv::erode(imagework, imagework, Element);
     cv::dilate(imagework, imagework, Element);
 
-    //medianBlur(imagework, imagework, 11);
     medianBlur(imagework, imagework, 3);
 
     cv::imshow(OPENCV_WINDOW4, imagework);
@@ -157,17 +154,15 @@ public:
     std::vector<cv::Vec4i> hierarchy;
     cv::findContours( imagework, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE );
 
-    for(auto const& contour:contours){
-      drawContours(imagesrc, contour, 1 ,Scalar(255,255,255), 2, 8, hierarchy, 0, Point() );
-    }
-
+    int i = 0;
     for( auto const& contour:contours){
+
       double area = contourArea(contour);
       double contourLength = arcLength(contour, true);
 
       double formfactorCircle = ((4 * 3.141 * area) / (contourLength*contourLength));
 
-      if (formfactorCircle > 0.80 && formfactorCircle < 0.95 && area > 3000.0){
+      if (formfactorCircle > 0.80 && formfactorCircle < 0.95 && area > 2900.0){
         Moments M = moments(contour);
         Point2d central = Point2d(M.m10 / M.m00, M.m01 / M.m00);
         RotatedRect rects = minAreaRect(contour);
@@ -197,8 +192,10 @@ public:
         metalchipMsg.header.stamp = ros::Time::now();
         metalChipPub.publish(metalchipMsg);
 
-        circle(imagesrc, central, 4, Scalar(255, 0, 0), 2);
+        drawContours(imagesrc,contours,i,Scalar(0, 255, 0), 2);
+        circle(imagesrc, central, 4, Scalar(0, 255, 0), 2);
       }
+      i++;
     }
     cv::imshow(OPENCV_WINDOW1, imagesrc);
     cv::waitKey(3);

@@ -1,6 +1,5 @@
 Header header
 int32 hue
-uint32 pos
-float64 vel
+uint32[2] pos
 time imageTime
 

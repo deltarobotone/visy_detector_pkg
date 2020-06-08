@@ -159,8 +159,7 @@ public:
 
       double area = contourArea(contour);
       double contourLength = arcLength(contour, true);
-
-      double formfactorCircle = ((4 * 3.141 * area) / (contourLength*contourLength));
+      double formfactorCircle = ((4 * 3.141 * area) / pow(contourLength,2.0));
 
       if (formfactorCircle > 0.80 && formfactorCircle < 0.95 && area > 2900.0){
         Moments M = moments(contour);
@@ -169,39 +168,22 @@ public:
 
         getRectSubPix(imagehsv, rects.size, rects.center, imagework);
 
-        int colour = getHueValue(imagework);
+        visy_detector_pkg::MetalChip metalchipMsg;
+        metalchipMsg.hue = getHueValue(imagework);
+        metalchipMsg.pos[0] = uint(central.x);
+        metalchipMsg.pos[1] = uint(central.y);
+        metalchipMsg.imageTime = image->header.stamp;
 
-        uint mSecImg = image->header.stamp.nsec/1000000;
-        uint mSecImgLast  = imageLast.header.stamp.nsec/1000000;
-        uint duration = mSecImg-mSecImgLast;
-        imageLast = *image;
+        metalchipMsg.header.stamp = ros::Time::now();
+        metalChipPub.publish(metalchipMsg);
 
-        Point2d diff = centralLast - central;
-
-        double distance = sqrt(pow(diff.x,2) + pow(diff.y,2));
-        double vel = distance / duration;
-
-        centralLast = central;
-
-        if(vel>0.01)
-        {
-          visy_detector_pkg::MetalChip metalchipMsg;
-          metalchipMsg.hue = colour;
-          metalchipMsg.pos = uint(central.x);
-          metalchipMsg.vel = vel;
-          metalchipMsg.imageTime = image->header.stamp;
-
-          metalchipMsg.header.stamp = ros::Time::now();
-          metalChipPub.publish(metalchipMsg);
-
-        }
         drawContours(imagesrc,contours,i,Scalar(0, 255, 0), 2);
         circle(imagesrc, central, 4, Scalar(0, 255, 0), 2);
       }
       i++;
     }
     cv::imshow(OPENCV_WINDOW1, imagesrc);
-    cv::waitKey(3);
+    cv::waitKey(1);
   }
 };
 

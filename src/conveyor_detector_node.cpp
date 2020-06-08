@@ -196,7 +196,7 @@ public:
       cv::imshow(OPENCV_WINDOW5, imagesrc);
       counter++;
     }
-    cv::waitKey(3);
+    cv::waitKey(1);
   }
   void step(){
     if(detected == true)conveyorSystemRectPub.publish(conveyorSystemRectMsg);

@@ -183,15 +183,18 @@ public:
 
         centralLast = central;
 
-        visy_detector_pkg::MetalChip metalchipMsg;
-        metalchipMsg.hue = colour;
-        metalchipMsg.pos = uint(central.x);
-        metalchipMsg.vel = vel;
-        metalchipMsg.imageTime = image->header.stamp;
+        if(vel>0.01)
+        {
+          visy_detector_pkg::MetalChip metalchipMsg;
+          metalchipMsg.hue = colour;
+          metalchipMsg.pos = uint(central.x);
+          metalchipMsg.vel = vel;
+          metalchipMsg.imageTime = image->header.stamp;
 
-        metalchipMsg.header.stamp = ros::Time::now();
-        metalChipPub.publish(metalchipMsg);
+          metalchipMsg.header.stamp = ros::Time::now();
+          metalChipPub.publish(metalchipMsg);
 
+        }
         drawContours(imagesrc,contours,i,Scalar(0, 255, 0), 2);
         circle(imagesrc, central, 4, Scalar(0, 255, 0), 2);
       }

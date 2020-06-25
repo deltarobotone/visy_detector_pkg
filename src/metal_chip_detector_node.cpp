@@ -188,6 +188,7 @@ public:
     //cv::imshow(OPENCV_WINDOW1, imagesrc);
     cv::waitKey(1);
     imageMsg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imagesrc).toImageMsg();
+    imagePub.publish(imageMsg);
   }
 };
 

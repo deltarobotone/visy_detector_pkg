@@ -9,18 +9,18 @@
 #include "visy_detector_pkg/DetectConveyorSystem.h"
 #include "visy_detector_pkg/ConveyorSystem.h"
 
-static const std::string OPENCV_WINDOW1 = "Image window1";
+/*static const std::string OPENCV_WINDOW1 = "Image window1";
 static const std::string OPENCV_WINDOW2 = "Image window2";
 static const std::string OPENCV_WINDOW3 = "Image window3";
 static const std::string OPENCV_WINDOW4 = "Image window4";
-static const std::string OPENCV_WINDOW5 = "Image window5";
+static const std::string OPENCV_WINDOW5 = "Image window5";*/
 using namespace cv;
 using namespace std;
 
 class ConveyorDetectorNode
 {
-  ros::NodeHandle nh_;
-  image_transport::ImageTransport it_;
+  ros::NodeHandle nh;
+  image_transport::ImageTransport it;
   image_transport::Subscriber image_sub_;
   cv::Mat imagework,imagesrc,imagegray,imagehsv;
   cv::Mat saturation, saturationf32,value, value32,chroma;
@@ -32,24 +32,28 @@ class ConveyorDetectorNode
   ros::ServiceServer detectConveyorSystemService;
   ros::Publisher conveyorSystemRectPub;
   visy_detector_pkg::ConveyorSystem conveyorSystemRectMsg;
+  image_transport::Publisher imagePub;
+  sensor_msgs::ImagePtr imageMsg;
 
 public:
-  ConveyorDetectorNode(): it_(nh_){
-    detectConveyorSystemService = nh_.advertiseService("detect_conveyor_system", &ConveyorDetectorNode::detectConveyorSystemCB,this);
-    conveyorSystemRectPub = nh_.advertise<visy_detector_pkg::ConveyorSystem>("conveyor_system_rect", 1);
+  ConveyorDetectorNode(): it(nh){
+    detectConveyorSystemService = nh.advertiseService("detect_conveyor_system", &ConveyorDetectorNode::detectConveyorSystemCB,this);
+    conveyorSystemRectPub = nh.advertise<visy_detector_pkg::ConveyorSystem>("conveyor_system_rect", 1);
+    imagePub = it.advertise("visy_image", 1);
   }
   ~ConveyorDetectorNode(){
   }
 
   bool detectConveyorSystemCB(visy_detector_pkg::DetectConveyorSystem::Request  &req, visy_detector_pkg::DetectConveyorSystem::Response &res)
   {
-    cv::namedWindow(OPENCV_WINDOW1);
+    /*cv::namedWindow(OPENCV_WINDOW1);
     cv::namedWindow(OPENCV_WINDOW2);
     cv::namedWindow(OPENCV_WINDOW3);
     cv::namedWindow(OPENCV_WINDOW4);
-    cv::namedWindow(OPENCV_WINDOW5);
+    cv::namedWindow(OPENCV_WINDOW5);*/
 
-    image_sub_ = it_.subscribe("/raspicam_node/image", 1, &ConveyorDetectorNode::imageCb, this);
+    image_sub_ = it.subscribe("/raspicam_node/image", 1, &ConveyorDetectorNode::imageCb, this);
+
     conveyorSystemRect.clear();
     conveyorSystemRect = vector<Point2d>{Point2d(),Point2d(),Point2d(),Point2d()};
     detected = false;
@@ -67,11 +71,11 @@ public:
     }
     conveyorSystemRectPub.publish(conveyorSystemRectMsg);
 
-    cv::destroyWindow(OPENCV_WINDOW1);
+    /*cv::destroyWindow(OPENCV_WINDOW1);
     cv::destroyWindow(OPENCV_WINDOW2);
     cv::destroyWindow(OPENCV_WINDOW3);
     cv::destroyWindow(OPENCV_WINDOW4);
-    cv::destroyWindow(OPENCV_WINDOW5);
+    cv::destroyWindow(OPENCV_WINDOW5);*/
 
     return true;
   }
@@ -85,8 +89,6 @@ public:
 
     imagework = cv_ptr->image.clone();
     imagesrc = cv_ptr->image.clone();
-
-    ROS_INFO("%d", counter+1);
 
     if(counter<10)
     {
@@ -106,18 +108,18 @@ public:
 
       imagework = chroma.clone();
 
-      cv::imshow(OPENCV_WINDOW1, imagework);
+      //cv::imshow(OPENCV_WINDOW1, imagework);
 
       cv::adaptiveThreshold(imagework,imagework,255,cv::ADAPTIVE_THRESH_GAUSSIAN_C,cv::THRESH_BINARY,9,2);
 
-      cv::imshow(OPENCV_WINDOW2, imagework);
+      //cv::imshow(OPENCV_WINDOW2, imagework);
 
       cv::Mat Element = getStructuringElement(cv::MORPH_RECT, cv::Size(4, 4), cv::Point(-1, -1));
 
       cv::erode(imagework, imagework, Element);
       cv::dilate(imagework, imagework, Element);
 
-      cv::imshow(OPENCV_WINDOW3, imagework);
+      //cv::imshow(OPENCV_WINDOW3, imagework);
 
       Element = getStructuringElement(cv::MORPH_RECT, cv::Size(140, 4), cv::Point(-1, -1));
 
@@ -126,7 +128,7 @@ public:
 
       medianBlur(imagework, imagework, 3);
 
-      cv::imshow(OPENCV_WINDOW4, imagework);
+      //cv::imshow(OPENCV_WINDOW4, imagework);
 
       std::vector<std::vector<cv::Point> > contours;
       std::vector<cv::Vec4i> hierarchy;
@@ -193,10 +195,11 @@ public:
       }
 
       detected = true;
-      cv::imshow(OPENCV_WINDOW5, imagesrc);
+      //cv::imshow(OPENCV_WINDOW5, imagesrc);
       counter++;
     }
     cv::waitKey(1);
+    imageMsg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imagesrc).toImageMsg();
   }
   void step(){
     if(detected == true)conveyorSystemRectPub.publish(conveyorSystemRectMsg);

@@ -201,6 +201,7 @@ public:
     cv::waitKey(1);
     imageMsg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imagesrc).toImageMsg();
     imagePub.publish(imageMsg);
+    ros::spin();
   }
   void step(){
     if(detected == true)conveyorSystemRectPub.publish(conveyorSystemRectMsg);

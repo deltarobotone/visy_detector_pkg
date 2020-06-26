@@ -45,6 +45,7 @@ public:
     imagePub = it.advertise("visy_image", 1);
   }
   ~MetalChipDetectorNode(){
+    imagePub.shutdown();
   }
 
   bool startMetalChipDetectorCB(visy_detector_pkg::StartMetalChipDetector::Request  &req, visy_detector_pkg::StartMetalChipDetector::Response &res){
@@ -189,7 +190,6 @@ public:
     cv::waitKey(1);
     imageMsg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imagesrc).toImageMsg();
     imagePub.publish(imageMsg);
-    ros::spinOnce();
   }
 };
 

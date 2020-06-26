@@ -43,6 +43,7 @@ public:
 
   }
   ~ConveyorDetectorNode(){
+    imagePub.shutdown();
   }
 
   bool detectConveyorSystemCB(visy_detector_pkg::DetectConveyorSystem::Request  &req, visy_detector_pkg::DetectConveyorSystem::Response &res)
@@ -66,7 +67,7 @@ public:
       ros::spinOnce();
     }
     image_sub_.shutdown();
-
+    imagePub.shutdown();
     for(auto & points:conveyorSystemRectMsg.rect){
       points.x = conveyorSystemRect.front().x;
       points.y = conveyorSystemRect.front().y;

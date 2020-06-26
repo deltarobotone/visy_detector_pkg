@@ -28,6 +28,7 @@ class ConveyorDetectorNode
   vector<Point2d> conveyorSystemRect;
   uint counter = 0;
   bool detected = false;
+  bool done = false;
   Point2d centralLast;
   ros::ServiceServer detectConveyorSystemService;
   ros::Publisher conveyorSystemRectPub;
@@ -39,7 +40,7 @@ public:
   ConveyorDetectorNode(): it(nh){
     detectConveyorSystemService = nh.advertiseService("detect_conveyor_system", &ConveyorDetectorNode::detectConveyorSystemCB,this);
     conveyorSystemRectPub = nh.advertise<visy_detector_pkg::ConveyorSystem>("conveyor_system_rect", 1);
-    imagePub = it.advertise("visy_image", 1);
+
   }
   ~ConveyorDetectorNode(){
   }
@@ -53,10 +54,12 @@ public:
     cv::namedWindow(OPENCV_WINDOW5);*/
 
     image_sub_ = it.subscribe("/raspicam_node/image", 1, &ConveyorDetectorNode::imageCb, this);
+    imagePub = it.advertise("visy_image", 1);
 
     conveyorSystemRect.clear();
     conveyorSystemRect = vector<Point2d>{Point2d(),Point2d(),Point2d(),Point2d()};
     detected = false;
+    done = false;
 
     counter = 0;
     while(counter<10){
@@ -198,13 +201,17 @@ public:
       //cv::imshow(OPENCV_WINDOW5, imagesrc);
       counter++;
     }
-    cv::waitKey(1);
+    else {
+      done=true;
+    }
+
     imageMsg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imagesrc).toImageMsg();
     imagePub.publish(imageMsg);
-    ros::spin();
+
+    cv::waitKey(1);
   }
   void step(){
-    if(detected == true)conveyorSystemRectPub.publish(conveyorSystemRectMsg);
+    if(detected == true && done == true)conveyorSystemRectPub.publish(conveyorSystemRectMsg);
   }
 };
 

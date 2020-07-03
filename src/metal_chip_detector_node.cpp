@@ -8,14 +8,10 @@
 #include <vector>
 #include "visy_detector_pkg/StartMetalChipDetector.h"
 #include "visy_detector_pkg/StopMetalChipDetector.h"
+#include "visy_detector_pkg/SelectImage.h"
 #include "visy_detector_pkg/MetalChip.h"
 #include "visy_detector_pkg/ConveyorSystem.h"
 
-/*static const std::string OPENCV_WINDOW1 = "Image window1";
-static const std::string OPENCV_WINDOW2 = "Image window2";
-static const std::string OPENCV_WINDOW3 = "Image window3";
-static const std::string OPENCV_WINDOW4 = "Image window4";
-static const std::string OPENCV_WINDOW5 = "Image window5";*/
 using namespace cv;
 using namespace std;
 
@@ -28,7 +24,7 @@ class MetalChipDetectorNode
   cv::Mat saturation, saturationf32,value, value32,chroma;
   std::vector<cv::Mat> imagesplit;
   vector<Point2f> conveyorSystemRect;
-  ros::ServiceServer startMetalChipDetectorService,stopMetalChipDetectorService;
+  ros::ServiceServer startMetalChipDetectorService,stopMetalChipDetectorService,selectImageService;
   ros::Subscriber conveyorSystemRectSub;
   ros::Publisher metalChipPub;
   Point2d centralLast;
@@ -36,12 +32,16 @@ class MetalChipDetectorNode
   image_transport::Publisher imagePub;
   sensor_msgs::ImagePtr imageMsg;
 
+  enum Image{SOURCE,HSV,CHROMA,ADAPTHRESH,ERODE,DILATE,MEDIAN,DETECTED};
+  ulong selectedImage;
+
 public:
   MetalChipDetectorNode(): it(nh){
     conveyorSystemRectSub = nh.subscribe("conveyor_system_rect", 1, &MetalChipDetectorNode::conveyorSystemRectCb,this);
     metalChipPub = nh.advertise<visy_detector_pkg::MetalChip>("metal_chip", 1);
     startMetalChipDetectorService = nh.advertiseService("start_metalchip_detector", &MetalChipDetectorNode::startMetalChipDetectorCB,this);
     stopMetalChipDetectorService = nh.advertiseService("stop_metalchip_detector", &MetalChipDetectorNode::stopMetalChipDetectorCB,this);
+    selectImageService = nh.advertiseService("select_image", &MetalChipDetectorNode::selectImageCB,this);
     imagePub = it.advertise("visy_image", 1);
   }
   ~MetalChipDetectorNode(){
@@ -49,21 +49,16 @@ public:
   }
 
   bool startMetalChipDetectorCB(visy_detector_pkg::StartMetalChipDetector::Request  &req, visy_detector_pkg::StartMetalChipDetector::Response &res){
-    /*cv::namedWindow(OPENCV_WINDOW1);
-    cv::namedWindow(OPENCV_WINDOW2);
-    cv::namedWindow(OPENCV_WINDOW3);
-    cv::namedWindow(OPENCV_WINDOW4);
-    cv::namedWindow(OPENCV_WINDOW5);*/
     image_sub_ = it.subscribe("/raspicam_node/image", 1, &MetalChipDetectorNode::imageCb, this);
     return true;
   }
   bool stopMetalChipDetectorCB(visy_detector_pkg::StopMetalChipDetector::Request  &req, visy_detector_pkg::StopMetalChipDetector::Response &res){
     image_sub_.shutdown();
-    /*cv::destroyWindow(OPENCV_WINDOW1);
-    cv::destroyWindow(OPENCV_WINDOW2);
-    cv::destroyWindow(OPENCV_WINDOW3);
-    cv::destroyWindow(OPENCV_WINDOW4);
-    cv::destroyWindow(OPENCV_WINDOW5);*/
+    return true;
+  }
+  bool selectImageCB(visy_detector_pkg::SelectImage::Request  &req, visy_detector_pkg::SelectImage::Response &res){
+    if(selectedImage<sizeof(Image)&&req.NEXT)selectedImage++;
+    if(selectedImage>0&&req.BACK)selectedImage--;
     return true;
   }
 
@@ -118,12 +113,15 @@ public:
     imagework = cv_ptr->image.clone();
     imagesrc = cv_ptr->image.clone();
 
+    if(selectedImage==Image::SOURCE)publishImage(imagework);
+
     cv::Rect roi(conveyorSystemRect[0],conveyorSystemRect[2]);
 
     imagework = imagesrc(roi);
     imagesrc = imagework.clone();
 
     cv::cvtColor(imagework, imagehsv, CV_BGR2HSV);
+    if(selectedImage==Image::HSV)publishImage(imagehsv);
 
     split(imagehsv, imagesplit);
 
@@ -139,20 +137,22 @@ public:
 
     imagework = chroma.clone();
 
-    //cv::imshow(OPENCV_WINDOW2, imagework);
+    if(selectedImage==Image::CHROMA)publishImage(imagework);
 
     cv::adaptiveThreshold(imagework,imagework,255,cv::ADAPTIVE_THRESH_GAUSSIAN_C,cv::THRESH_BINARY,5,2);
 
-    //cv::imshow(OPENCV_WINDOW3, imagework);
+    if(selectedImage==Image::ADAPTHRESH)publishImage(imagework);
 
     cv::Mat Element = getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(8, 8), cv::Point(-1, -1));
 
     cv::erode(imagework, imagework, Element);
+    if(selectedImage==Image::DILATE)publishImage(imagework);
+
     cv::dilate(imagework, imagework, Element);
+    if(selectedImage==Image::ERODE)publishImage(imagework);
 
     medianBlur(imagework, imagework, 3);
-
-    //cv::imshow(OPENCV_WINDOW4, imagework);
+    if(selectedImage==Image::MEDIAN)publishImage(imagework);
 
     std::vector<std::vector<cv::Point> > contours;
     std::vector<cv::Vec4i> hierarchy;
@@ -186,9 +186,13 @@ public:
       }
       i++;
     }
-    //cv::imshow(OPENCV_WINDOW1, imagesrc);
+    if(selectedImage==Image::DETECTED)publishImage(imagesrc);
     cv::waitKey(1);
-    imageMsg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imagesrc).toImageMsg();
+
+  }
+
+  void publishImage(cv::Mat &img){
+    imageMsg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", img).toImageMsg();
     imagePub.publish(imageMsg);
   }
 };

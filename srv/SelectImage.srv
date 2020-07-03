@@ -1,0 +1,8 @@
+#request constants
+int8 NEXT = 1
+int8 BACK = -1
+#request fields
+int8 direction
+---
+#response fields
+string res

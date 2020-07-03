@@ -8,7 +8,7 @@ find_package(OpenCV REQUIRED)
 
 add_message_files(FILES MetalChip.msg ConveyorSystem.msg)
 
-add_service_files(DIRECTORY srv FILES DetectConveyorSystem.srv StartMetalChipDetector.srv StopMetalChipDetector.srv)
+add_service_files(DIRECTORY srv FILES DetectConveyorSystem.srv StartMetalChipDetector.srv StopMetalChipDetector.srv SelectImage.srv)
 
 generate_messages(DEPENDENCIES std_msgs geometry_msgs)
 

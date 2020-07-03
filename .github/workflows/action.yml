@@ -33,7 +33,7 @@ jobs:
           path: ${{ env.CCACHE_DIR }}
           key: ccache-${{ matrix.env.ROS_DISTRO }}-${{ matrix.env.ROS_REPO }}
       - name: Install ros-melodic-desktop-full
-        run: sudo apt-get install ros-${{ matrix.env.ROS_DISTRO }}-desktop-full -y
+        run: sudo apt install ros-${{ matrix.env.ROS_DISTRO }}-desktop-full -y
       # Run industrial_ci
       - uses: 'ros-industrial/industrial_ci@master'
         env: ${{ matrix.env }}

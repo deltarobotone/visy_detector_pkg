@@ -192,9 +192,9 @@ public:
   }
 
   void publishImage(cv::Mat &img){
-    try {cvtColor(img, img, COLOR_GRAY2RGB);}
-    catch (...) {}
-    imageMsg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", img).toImageMsg();
+    cv:Mat test;
+    img.convertTo(test,CV_8UC3,255);
+    imageMsg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", test).toImageMsg();
     imagePub.publish(imageMsg);
   }
 };

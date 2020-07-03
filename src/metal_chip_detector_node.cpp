@@ -113,7 +113,7 @@ public:
     imagework = cv_ptr->image.clone();
     imagesrc = cv_ptr->image.clone();
 
-    if(selectedImage==Image::SOURCE)publishImage(imagework);
+    if(selectedImage==Image::SOURCE)publishImage(imagework,"bgr8");
 
     cv::Rect roi(conveyorSystemRect[0],conveyorSystemRect[2]);
 
@@ -121,7 +121,7 @@ public:
     imagesrc = imagework.clone();
 
     cv::cvtColor(imagework, imagehsv, CV_BGR2HSV);
-    if(selectedImage==Image::HSV)publishImage(imagehsv);
+    if(selectedImage==Image::HSV)publishImage(imagehsv,"bgr8");
 
     split(imagehsv, imagesplit);
 
@@ -137,22 +137,22 @@ public:
 
     imagework = chroma.clone();
 
-    if(selectedImage==Image::CHROMA)publishImage(imagework);
+    if(selectedImage==Image::CHROMA)publishImage(imagework,"mono8");
 
     cv::adaptiveThreshold(imagework,imagework,255,cv::ADAPTIVE_THRESH_GAUSSIAN_C,cv::THRESH_BINARY,5,2);
 
-    if(selectedImage==Image::ADAPTHRESH)publishImage(imagework);
+    if(selectedImage==Image::ADAPTHRESH)publishImage(imagework,"mono8");
 
     cv::Mat Element = getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(8, 8), cv::Point(-1, -1));
 
     cv::erode(imagework, imagework, Element);
-    if(selectedImage==Image::DILATE)publishImage(imagework);
+    if(selectedImage==Image::DILATE)publishImage(imagework,"mono8");
 
     cv::dilate(imagework, imagework, Element);
-    if(selectedImage==Image::ERODE)publishImage(imagework);
+    if(selectedImage==Image::ERODE)publishImage(imagework,"mono8");
 
     medianBlur(imagework, imagework, 3);
-    if(selectedImage==Image::MEDIAN)publishImage(imagework);
+    if(selectedImage==Image::MEDIAN)publishImage(imagework,"mono8");
 
     std::vector<std::vector<cv::Point> > contours;
     std::vector<cv::Vec4i> hierarchy;
@@ -186,15 +186,13 @@ public:
       }
       i++;
     }
-    if(selectedImage==Image::DETECTED)publishImage(imagesrc);
+    if(selectedImage==Image::DETECTED)publishImage(imagesrc,"bgr8");
     cv::waitKey(1);
 
   }
 
-  void publishImage(cv::Mat &img){
-    cv:Mat test;
-    img.convertTo(test,CV_8UC3,255);
-    imageMsg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", test).toImageMsg();
+  void publishImage(cv::Mat &img, string format){
+    imageMsg = cv_bridge::CvImage(std_msgs::Header(), format, img).toImageMsg();
     imagePub.publish(imageMsg);
   }
 };

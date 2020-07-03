@@ -33,7 +33,7 @@ class MetalChipDetectorNode
   sensor_msgs::ImagePtr imageMsg;
 
   enum Image{SOURCE,HSV,CHROMA,ADAPTHRESH,ERODE,DILATE,MEDIAN,DETECTED};
-  ulong selectedImage;
+  ulong selectedImage = SOURCE;
 
 public:
   MetalChipDetectorNode(): it(nh){
@@ -57,8 +57,10 @@ public:
     return true;
   }
   bool selectImageCB(visy_detector_pkg::SelectImage::Request  &req, visy_detector_pkg::SelectImage::Response &res){
-    if(selectedImage<sizeof(Image)&&req.NEXT)selectedImage++;
-    if(selectedImage>0&&req.BACK)selectedImage--;
+    ROS_INFO("selectImageCB");
+    if(selectedImage < sizeof(Image) && req.direction == req.NEXT)selectedImage++;
+    if(selectedImage > 0 && req.direction == req.BACK)selectedImage--;
+    ROS_INFO("%d",selectedImage);
     return true;
   }
 

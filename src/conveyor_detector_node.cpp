@@ -68,6 +68,8 @@ public:
     }
     image_sub_.shutdown();
     imagePub.shutdown();
+    ros::spinOnce();
+
     for(auto & points:conveyorSystemRectMsg.rect){
       points.x = conveyorSystemRect.front().x;
       points.y = conveyorSystemRect.front().y;

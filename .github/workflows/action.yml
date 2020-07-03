@@ -27,15 +27,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: Dovyski/setup-opencv-action@v1
-        with:
-          opencv-version: '3.2.0'
-      - uses: actions/checkout@v2
       # This step will fetch/store the directory used by ccache before/after the ci run
       - uses: actions/cache@v2
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ccache-${{ matrix.env.ROS_DISTRO }}-${{ matrix.env.ROS_REPO }}
+      - name: Install ros-melodic-desktop-full
+        run: sudo apt-get install ros-${{ matrix.env.ROS_DISTRO }}-desktop-full -y
       # Run industrial_ci
       - uses: 'ros-industrial/industrial_ci@master'
         env: ${{ matrix.env }}

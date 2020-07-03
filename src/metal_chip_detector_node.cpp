@@ -192,7 +192,7 @@ public:
   }
 
   void publishImage(cv::Mat &img){
-    img.step = img.cols*3;
+    cvtColor(img, img, COLOR_GRAY2RGB);
     imageMsg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", img).toImageMsg();
     imagePub.publish(imageMsg);
   }

@@ -57,10 +57,8 @@ public:
     return true;
   }
   bool selectImageCB(visy_detector_pkg::SelectImage::Request  &req, visy_detector_pkg::SelectImage::Response &res){
-    ROS_INFO("selectImageCB");
     if(selectedImage < sizeof(Image) && req.direction == req.NEXT)selectedImage++;
     if(selectedImage > 0 && req.direction == req.BACK)selectedImage--;
-    ROS_INFO("%d",selectedImage);
     return true;
   }
 
@@ -194,6 +192,7 @@ public:
   }
 
   void publishImage(cv::Mat &img){
+    img.step = img.cols*3;
     imageMsg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", img).toImageMsg();
     imagePub.publish(imageMsg);
   }

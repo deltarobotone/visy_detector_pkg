@@ -14,13 +14,16 @@ jobs:
         with:
           ros-version: 'melodic'
           workspace: '$GITHUB_WORKSPACE'
+      - name: Update sources
+        run: sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
+      - name: Get key
+        run: sudo apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
+      - name: Update packages
+        run: sudo apt update
       - name: Install ros-melodic-desktop-full
-      - run: sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
-      - run: sudo apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
-      - run: sudo apt update
-      - run: sudo apt install ros-melodic-desktop-full -y
+        run: sudo apt install ros-melodic-desktop-full -y
       - name: Build
-      - run: catkin_make_isolated -DCMAKE_C_COMPILER=${{ matrix.compiler }} -DCMAKE_CXX_COMPILER=${{ matrix.compiler }}
+        run: catkin_make_isolated -DCMAKE_C_COMPILER=${{ matrix.compiler }} -DCMAKE_CXX_COMPILER=${{ matrix.compiler }}
 
 
 

@@ -16,8 +16,6 @@ jobs:
       run: sudo apt install ros-melodic-desktop-full -y
     - name: Source workspace
       run: source /opt/ros/melodic/setup.bash
-    - name: Rosdep
-      run: sudo rosdep init && rosdep update
     - name: Setup workspace
       run: mkdir -p ~/ws/src && ~/ws/src
     - uses: actions/checkout@v1

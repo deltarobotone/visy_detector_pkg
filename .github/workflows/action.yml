@@ -11,6 +11,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
+      - name: Update sources
+        run: sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
+      - name: Get key
+        run: sudo apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
+      - name: Update packages
+        run: sudo apt update
+      - name: Install ros-melodic-desktop-full
+        run: sudo apt install ros-melodic-desktop-full -y
       - uses: 'ros-industrial/industrial_ci@master'
         env: ${{matrix.env}}
 

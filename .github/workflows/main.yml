@@ -18,6 +18,5 @@ jobs:
       run: source /opt/ros/melodic/setup.bash
     - name: Setup workspace
       run: mkdir -p ~/ws/src && cd ~/ws/src
-    - uses: actions/checkout@v1
     - name: Build
-      run: cd .. && catkin_make
+      run: cd ~/ws && catkin_make

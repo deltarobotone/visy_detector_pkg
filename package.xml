@@ -21,7 +21,6 @@
   <build_depend>sensor_msgs</build_depend>
   <build_depend>cv_bridge</build_depend>
   <build_depend>image_transport</build_depend>
-  <build_depend>opencv3</build_depend>
 
   <exec_depend>boost</exec_depend>
   <exec_depend>libopencv-dev</exec_depend>
@@ -32,7 +31,7 @@
   <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>cv_bridge</exec_depend>
   <exec_depend>image_transport</exec_depend>
-  <exec_depend>opencv3</exec_depend>
+  <exec_depend>OpenCV</exec_depend>
 
   <build_export_depend>libopencv-dev</build_export_depend>
 </package>

@@ -7,7 +7,7 @@ jobs:
     strategy:
       matrix:
         env:
-          - {ROS_DISTRO: melodic, ROS_REPO: main, ADDITIONAL_DEBS: ros-melodic-vision_opencv}
+          - {ROS_DISTRO: melodic, ROS_REPO: main, ADDITIONAL_DEBS: ros-melodic-vision-opencv}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1

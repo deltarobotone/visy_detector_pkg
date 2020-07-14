@@ -8,10 +8,9 @@ jobs:
       matrix:
         env:
           - {ROS_DISTRO: melodic, ROS_REPO: main}
+          - ADDITIONAL_DEBS: ros-melodic-vision_opencv
     runs-on: ubuntu-latest
     steps:
-      - name: Install ROS
-        run: sudo apt-get install ros-melodic-desktop-full
       - uses: actions/checkout@v1
       - uses: 'ros-industrial/industrial_ci@master'
         env: ${{matrix.env}}

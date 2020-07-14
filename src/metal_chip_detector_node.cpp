@@ -17,7 +17,7 @@ using namespace std;
 
 class MetalChipDetectorNode
 {
-  ros::NodeHandlexxx nh;
+  ros::NodeHandle nh;
   image_transport::ImageTransport it;
   image_transport::Subscriber image_sub_;
   cv::Mat imagework,imagesrc,imagegray,imagehsv;

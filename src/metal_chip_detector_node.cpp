@@ -32,7 +32,7 @@ class MetalChipDetectorNode
   image_transport::Publisher imagePub;
   sensor_msgs::ImagePtr imageMsg;
 
-  enum Image{SOURCE,HSV,CHROMA,ADAPTHRESH,ERODE,DILATE,MEDIAN,DETECTED};
+  enum Image{DETECTED,SOURCE,HSV,CHROMA,ADAPTHRESH,ERODE,DILATE,MEDIAN};
   ulong selectedImage = SOURCE;
 
 public:

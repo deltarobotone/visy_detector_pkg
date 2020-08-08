@@ -48,12 +48,6 @@ public:
 
   bool detectConveyorSystemCB(visy_detector_pkg::DetectConveyorSystem::Request  &req, visy_detector_pkg::DetectConveyorSystem::Response &res)
   {
-    /*cv::namedWindow(OPENCV_WINDOW1);
-    cv::namedWindow(OPENCV_WINDOW2);
-    cv::namedWindow(OPENCV_WINDOW3);
-    cv::namedWindow(OPENCV_WINDOW4);
-    cv::namedWindow(OPENCV_WINDOW5);*/
-
     image_sub_ = it.subscribe("/raspicam_node/image", 1, &ConveyorDetectorNode::imageCb, this);
     imagePub = it.advertise("visy_image", 1);
 
@@ -63,7 +57,7 @@ public:
     done = false;
 
     counter = 0;
-    while(counter<10){
+    while(counter<20){
       ros::spinOnce();
     }
     image_sub_.shutdown();
@@ -76,12 +70,6 @@ public:
       conveyorSystemRect.erase(conveyorSystemRect.begin());
     }
     conveyorSystemRectPub.publish(conveyorSystemRectMsg);
-
-    /*cv::destroyWindow(OPENCV_WINDOW1);
-    cv::destroyWindow(OPENCV_WINDOW2);
-    cv::destroyWindow(OPENCV_WINDOW3);
-    cv::destroyWindow(OPENCV_WINDOW4);
-    cv::destroyWindow(OPENCV_WINDOW5);*/
 
     return true;
   }
@@ -96,7 +84,7 @@ public:
     imagework = cv_ptr->image.clone();
     imagesrc = cv_ptr->image.clone();
 
-    if(counter<10)
+    if(counter<20)
     {
       cv::cvtColor(imagework, imagehsv, CV_BGR2HSV);
 
@@ -114,18 +102,12 @@ public:
 
       imagework = chroma.clone();
 
-      //cv::imshow(OPENCV_WINDOW1, imagework);
-
       cv::adaptiveThreshold(imagework,imagework,255,cv::ADAPTIVE_THRESH_GAUSSIAN_C,cv::THRESH_BINARY,9,2);
-
-      //cv::imshow(OPENCV_WINDOW2, imagework);
 
       cv::Mat Element = getStructuringElement(cv::MORPH_RECT, cv::Size(4, 4), cv::Point(-1, -1));
 
       cv::erode(imagework, imagework, Element);
       cv::dilate(imagework, imagework, Element);
-
-      //cv::imshow(OPENCV_WINDOW3, imagework);
 
       Element = getStructuringElement(cv::MORPH_RECT, cv::Size(140, 4), cv::Point(-1, -1));
 
@@ -133,8 +115,6 @@ public:
       cv::dilate(imagework, imagework, Element);
 
       medianBlur(imagework, imagework, 3);
-
-      //cv::imshow(OPENCV_WINDOW4, imagework);
 
       std::vector<std::vector<cv::Point> > contours;
       std::vector<cv::Vec4i> hierarchy;
@@ -201,7 +181,7 @@ public:
       }
 
       detected = true;
-      //cv::imshow(OPENCV_WINDOW5, imagesrc);
+
       counter++;
     }
     else {
@@ -210,6 +190,7 @@ public:
 
     imageMsg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imagesrc).toImageMsg();
     imagePub.publish(imageMsg);
+    ros::spinOnce();
 
     cv::waitKey(3);
   }

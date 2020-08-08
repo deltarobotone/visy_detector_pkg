@@ -187,7 +187,7 @@ public:
       i++;
     }
     if(selectedImage==Image::DETECTED)publishImage(imagesrc,"bgr8");
-    cv::waitKey(1);
+    cv::waitKey(3);
 
   }
 

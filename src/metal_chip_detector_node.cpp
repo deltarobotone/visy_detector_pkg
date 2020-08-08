@@ -33,7 +33,7 @@ class MetalChipDetectorNode
   sensor_msgs::ImagePtr imageMsg;
 
   enum Image{DETECTED,SOURCE,HSV,CHROMA,ADAPTHRESH,ERODE,DILATE,MEDIAN};
-  ulong selectedImage = SOURCE;
+  ulong selectedImage = DETECTED;
 
 public:
   MetalChipDetectorNode(): it(nh){
@@ -118,7 +118,6 @@ public:
     cv::Rect roi(conveyorSystemRect[0],conveyorSystemRect[2]);
 
     imagework = imagesrc(roi);
-    imagesrc = imagework.clone();
 
     cv::cvtColor(imagework, imagehsv, CV_BGR2HSV);
     if(selectedImage==Image::HSV)publishImage(imagehsv,"bgr8");

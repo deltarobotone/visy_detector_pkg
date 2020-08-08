@@ -118,6 +118,7 @@ public:
     cv::Rect roi(conveyorSystemRect[0],conveyorSystemRect[2]);
 
     imagework = imagesrc(roi);
+    imagesrc = imagework.clone();
 
     cv::cvtColor(imagework, imagehsv, CV_BGR2HSV);
     if(selectedImage==Image::HSV)publishImage(imagehsv,"bgr8");

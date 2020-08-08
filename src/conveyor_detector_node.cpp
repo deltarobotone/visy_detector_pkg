@@ -58,6 +58,8 @@ public:
 
     counter = 0;
     while(counter<20){
+      imageMsg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imagesrc).toImageMsg();
+      imagePub.publish(imageMsg);
       ros::spinOnce();
     }
     image_sub_.shutdown();
@@ -186,7 +188,13 @@ public:
     }
     else {
       if(detected == true) done=true;
-      else counter = 0;
+      else{
+      conveyorSystemRect.at(0)=Point2f(0.0,200.0);
+      conveyorSystemRect.at(1)=Point2f(0.0,110.0);
+      conveyorSystemRect.at(2)=Point2f(410.0,110.0);
+      conveyorSystemRect.at(3)=Point2f(410.0,200.0);
+      done=true;
+      }
     }
 
     imageMsg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imagesrc).toImageMsg();

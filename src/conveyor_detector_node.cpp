@@ -178,19 +178,19 @@ public:
           circle(imagesrc, conveyorSystemRect[i],1, Scalar(255,0,0), 4, 8);
           for( size_t j = 0; j < 4; j++ )line( imagesrc, conveyorSystemRect[j], conveyorSystemRect[(j+1)%4], Scalar(0,255,0), 2, 8 );
         }
+
+        detected = true;
+
       }
-
-      detected = true;
-
       counter++;
     }
     else {
-      done=true;
+      if(detected == true) done=true;
+      else counter = 0;
     }
 
     imageMsg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imagesrc).toImageMsg();
     imagePub.publish(imageMsg);
-    ros::spinOnce();
 
     cv::waitKey(3);
   }

@@ -32,4 +32,13 @@
       <param name="shutter_speed" value="0"/>
     </node>
 
+    <node name="$(anon dynparam)" pkg="dynamic_reconfigure" type="dynparam" args="set_from_parameters raspicam_node">
+      <param name="contrast" type="int_t" value="50" />
+      <param name="sharpness" type="int_t" value="0" />
+      <param name="brightness" type="int_t" value="60" />
+      <param name="saturation" type="int_t" value="0" />
+      <param name="ISO" type="int_t" value="700" />
+      <param name="exposure_compensation" type="int_t" value="0" />
+    </node>
+
 </launch>

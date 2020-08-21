@@ -52,12 +52,12 @@ public:
     image_sub_ = it.subscribe("/raspicam_node/image", 1, &ConveyorDetectorNode::imageCb, this);
     imagePub = it.advertise("visy_image", 1);
 
-    system("rosrun dynamic_reconfigure dynparam set_from_parameters raspicam_node contrast 50");
-    system("rosrun dynamic_reconfigure dynparam set_from_parameters raspicam_node sharpness 0");
-    system("rosrun dynamic_reconfigure dynparam set_from_parameters raspicam_node brightness 60");
-    system("rosrun dynamic_reconfigure dynparam set_from_parameters raspicam_node saturation 0");
-    system("rosrun dynamic_reconfigure dynparam set_from_parameters raspicam_node ISO 700");
-    system("rosrun dynamic_reconfigure dynparam set_from_parameters raspicam_node exposure_compensation 0");
+    //system("rosrun dynamic_reconfigure dynparam set_from_parameters raspicam_node contrast 50");
+    //system("rosrun dynamic_reconfigure dynparam set_from_parameters raspicam_node sharpness 0");
+    //system("rosrun dynamic_reconfigure dynparam set_from_parameters raspicam_node brightness 60");
+    //system("rosrun dynamic_reconfigure dynparam set_from_parameters raspicam_node saturation 0");
+    //system("rosrun dynamic_reconfigure dynparam set_from_parameters raspicam_node ISO 700");
+    //system("rosrun dynamic_reconfigure dynparam set_from_parameters raspicam_node exposure_compensation 0");
 
     conveyorSystemRect.clear();
     conveyorSystemRect = vector<Point2d>{Point2d(),Point2d(),Point2d(),Point2d()};

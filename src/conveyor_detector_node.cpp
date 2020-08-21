@@ -27,6 +27,7 @@ class ConveyorDetectorNode
   std::vector<cv::Mat> imagesplit;
   vector<Point2d> conveyorSystemRect;
   uint counter = 0;
+  uint searchLoops = 50;
   bool detected = false;
   bool done = false;
   Point2d centralLast;
@@ -43,6 +44,7 @@ public:
 
   }
   ~ConveyorDetectorNode(){
+    image_sub_.shutdown();
     imagePub.shutdown();
   }
 
@@ -57,9 +59,9 @@ public:
     done = false;
 
     counter = 0;
-    while(counter<20){
-      imageMsg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imagesrc).toImageMsg();
-      imagePub.publish(imageMsg);
+    while(counter<searchLoops){
+      //imageMsg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imagesrc).toImageMsg();
+      //imagePub.publish(imageMsg);
       ros::spinOnce();
     }
     image_sub_.shutdown();
@@ -72,7 +74,7 @@ public:
       conveyorSystemRect.erase(conveyorSystemRect.begin());
     }
     conveyorSystemRectPub.publish(conveyorSystemRectMsg);
-
+    res.autodetected = detected;
     return true;
   }
 
@@ -86,7 +88,7 @@ public:
     imagework = cv_ptr->image.clone();
     imagesrc = cv_ptr->image.clone();
 
-    if(counter<20)
+    if(counter<searchLoops)
     {
       cv::cvtColor(imagework, imagehsv, CV_BGR2HSV);
 
@@ -203,7 +205,7 @@ public:
     cv::waitKey(3);
   }
   void step(){
-    if(detected == true && done == true)conveyorSystemRectPub.publish(conveyorSystemRectMsg);
+    if(done == true)conveyorSystemRectPub.publish(conveyorSystemRectMsg);
   }
 };
 

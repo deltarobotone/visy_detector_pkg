@@ -41,19 +41,23 @@ public:
     metalChipPub = nh.advertise<visy_detector_pkg::MetalChip>("metal_chip", 1);
     startMetalChipDetectorService = nh.advertiseService("start_metalchip_detector", &MetalChipDetectorNode::startMetalChipDetectorCB,this);
     stopMetalChipDetectorService = nh.advertiseService("stop_metalchip_detector", &MetalChipDetectorNode::stopMetalChipDetectorCB,this);
-    selectImageService = nh.advertiseService("select_image", &MetalChipDetectorNode::selectImageCB,this);
-    imagePub = it.advertise("visy_image", 1);
   }
   ~MetalChipDetectorNode(){
+    image_sub_.shutdown();
     imagePub.shutdown();
+    selectImageService.shutdown();
   }
 
   bool startMetalChipDetectorCB(visy_detector_pkg::StartMetalChipDetector::Request  &req, visy_detector_pkg::StartMetalChipDetector::Response &res){
+    selectImageService = nh.advertiseService("select_image", &MetalChipDetectorNode::selectImageCB,this);
+    imagePub = it.advertise("visy_image", 1);
     image_sub_ = it.subscribe("/raspicam_node/image", 1, &MetalChipDetectorNode::imageCb, this);
     return true;
   }
   bool stopMetalChipDetectorCB(visy_detector_pkg::StopMetalChipDetector::Request  &req, visy_detector_pkg::StopMetalChipDetector::Response &res){
     image_sub_.shutdown();
+    imagePub.shutdown();
+    selectImageService.shutdown();
     return true;
   }
   bool selectImageCB(visy_detector_pkg::SelectImage::Request  &req, visy_detector_pkg::SelectImage::Response &res){
@@ -118,7 +122,7 @@ public:
     cv::Rect roi(conveyorSystemRect[0],conveyorSystemRect[2]);
 
     imagework = imagesrc(roi);
-    imagesrc = imagework.clone();
+    //imagesrc = imagework.clone();
 
     cv::cvtColor(imagework, imagehsv, CV_BGR2HSV);
     if(selectedImage==Image::HSV)publishImage(imagehsv,"bgr8");
@@ -180,12 +184,16 @@ public:
 
         metalchipMsg.header.stamp = ros::Time::now();
         metalChipPub.publish(metalchipMsg);
-
-        drawContours(imagesrc,contours,i,Scalar(0, 255, 0), 2);
-        circle(imagesrc, central, 4, Scalar(0, 255, 0), 2);
+        Point2d srcCentral;
+        srcCentral.x = roi.x + central.x;
+        srcCentral.y = roi.y + central.y;
+        cv::Point os(roi.x, roi.y);
+        drawContours(imagesrc,contours,i,Scalar(0, 255, 0), 2,LINE_8,noArray(),INT_MAX, os);
+        circle(imagesrc, srcCentral, 4, Scalar(0, 255, 0), 2);
       }
       i++;
     }
+    rectangle(imagesrc,roi,Scalar(0,0,255), 1, 8);
     if(selectedImage==Image::DETECTED)publishImage(imagesrc,"bgr8");
     cv::waitKey(3);
 

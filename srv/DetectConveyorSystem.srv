@@ -2,5 +2,5 @@
 string req
 ---
 #response fields
-string res
+bool autodetected
 

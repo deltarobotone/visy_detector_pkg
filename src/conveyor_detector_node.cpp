@@ -27,7 +27,7 @@ class ConveyorDetectorNode
   std::vector<cv::Mat> imagesplit;
   vector<Point2d> conveyorSystemRect;
   uint counter = 0;
-  uint searchLoops = 50;
+  uint searchLoops = 20;
   bool detected = false;
   bool done = false;
   Point2d centralLast;
@@ -171,6 +171,9 @@ public:
 
       }
       counter++;
+      char str[50];
+      sprintf(str,"Loop %d of %d",counter,searchLoops);
+      putText(imagesrc, str, Point(10,10), FONT_HERSHEY_PLAIN, 1,  Scalar(0,0,255,255));
       imageMsg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imagesrc).toImageMsg();
       imagePub.publish(imageMsg);
 

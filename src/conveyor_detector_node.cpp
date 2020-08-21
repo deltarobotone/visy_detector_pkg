@@ -41,7 +41,6 @@ public:
   ConveyorDetectorNode(): it(nh){
     detectConveyorSystemService = nh.advertiseService("detect_conveyor_system", &ConveyorDetectorNode::detectConveyorSystemCB,this);
     conveyorSystemRectPub = nh.advertise<visy_detector_pkg::ConveyorSystem>("conveyor_system_rect", 1);
-
   }
   ~ConveyorDetectorNode(){
     image_sub_.shutdown();
@@ -52,6 +51,13 @@ public:
   {
     image_sub_ = it.subscribe("/raspicam_node/image", 1, &ConveyorDetectorNode::imageCb, this);
     imagePub = it.advertise("visy_image", 1);
+
+    system("rosrun dynamic_reconfigure dynparam set_from_parameters raspicam_node contrast 50");
+    system("rosrun dynamic_reconfigure dynparam set_from_parameters raspicam_node sharpness 0");
+    system("rosrun dynamic_reconfigure dynparam set_from_parameters raspicam_node brightness 60");
+    system("rosrun dynamic_reconfigure dynparam set_from_parameters raspicam_node saturation 0");
+    system("rosrun dynamic_reconfigure dynparam set_from_parameters raspicam_node ISO 700");
+    system("rosrun dynamic_reconfigure dynparam set_from_parameters raspicam_node exposure_compensation 0");
 
     conveyorSystemRect.clear();
     conveyorSystemRect = vector<Point2d>{Point2d(),Point2d(),Point2d(),Point2d()};
@@ -173,7 +179,7 @@ public:
       counter++;
       char str[50];
       sprintf(str,"Loop %d of %d",counter,searchLoops);
-      putText(imagesrc, str, Point(10,10), FONT_HERSHEY_PLAIN, 1,  Scalar(0,0,255,255));
+      putText(imagesrc, str, Point(10,10), FONT_HERSHEY_PLAIN, 4,  Scalar(0,255,0));
       imageMsg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imagesrc).toImageMsg();
       imagePub.publish(imageMsg);
 

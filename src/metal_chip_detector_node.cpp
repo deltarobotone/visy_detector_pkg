@@ -193,7 +193,7 @@ public:
       }
       i++;
     }
-    rectangle(imagesrc,roi,Scalar(0,0,255), 1, 8);
+    rectangle(imagesrc,roi,Scalar(255,255,255), 2, 8);
     if(selectedImage==Image::DETECTED)publishImage(imagesrc,"bgr8");
     cv::waitKey(3);
 

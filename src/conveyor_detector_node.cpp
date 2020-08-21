@@ -57,24 +57,9 @@ public:
     conveyorSystemRect = vector<Point2d>{Point2d(),Point2d(),Point2d(),Point2d()};
     detected = false;
     done = false;
-
+    conveyorSystemRectMsg.autodetected = detected;
+    conveyorSystemRectMsg.done = done;
     counter = 0;
-    while(counter<searchLoops){
-      //imageMsg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imagesrc).toImageMsg();
-      //imagePub.publish(imageMsg);
-      ros::spinOnce();
-    }
-    image_sub_.shutdown();
-    imagePub.shutdown();
-    ros::spinOnce();
-
-    for(auto & points:conveyorSystemRectMsg.rect){
-      points.x = conveyorSystemRect.front().x;
-      points.y = conveyorSystemRect.front().y;
-      conveyorSystemRect.erase(conveyorSystemRect.begin());
-    }
-    conveyorSystemRectPub.publish(conveyorSystemRectMsg);
-    res.autodetected = detected;
     return true;
   }
 
@@ -177,7 +162,6 @@ public:
           if(point.y < meanR && point.y > conveyorSystemRect.at(2).y)conveyorSystemRect.at(2)=point;
         }
 
-
         for ( size_t i = 0; i< points.size(); i++ ){
           circle(imagesrc, conveyorSystemRect[i],1, Scalar(255,0,0), 4, 8);
           for( size_t j = 0; j < 4; j++ )line( imagesrc, conveyorSystemRect[j], conveyorSystemRect[(j+1)%4], Scalar(0,255,0), 2, 8 );
@@ -187,21 +171,33 @@ public:
 
       }
       counter++;
+      imageMsg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imagesrc).toImageMsg();
+      imagePub.publish(imageMsg);
+
     }
     else {
-      if(detected == true) done=true;
-      else{
-      conveyorSystemRect.at(0)=Point2f(0.0,200.0);
-      conveyorSystemRect.at(1)=Point2f(0.0,110.0);
-      conveyorSystemRect.at(2)=Point2f(410.0,110.0);
-      conveyorSystemRect.at(3)=Point2f(410.0,200.0);
-      done=true;
+      if(detected == true){
+        done=true;
+        conveyorSystemRectMsg.autodetected = detected;
+        conveyorSystemRectMsg.done = done;
       }
+      else{
+        conveyorSystemRect.at(0)=Point2f(0.0,200.0);
+        conveyorSystemRect.at(1)=Point2f(0.0,110.0);
+        conveyorSystemRect.at(2)=Point2f(410.0,110.0);
+        conveyorSystemRect.at(3)=Point2f(410.0,200.0);
+        done=true;
+        conveyorSystemRectMsg.autodetected = detected;
+        conveyorSystemRectMsg.done = done;
+      }
+      for(auto & points:conveyorSystemRectMsg.rect){
+        points.x = conveyorSystemRect.front().x;
+        points.y = conveyorSystemRect.front().y;
+        conveyorSystemRect.erase(conveyorSystemRect.begin());
+      }
+      image_sub_.shutdown();
+      imagePub.shutdown();
     }
-
-    imageMsg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imagesrc).toImageMsg();
-    imagePub.publish(imageMsg);
-
     cv::waitKey(3);
   }
   void step(){

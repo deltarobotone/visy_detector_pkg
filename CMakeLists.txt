@@ -3,16 +3,18 @@ project(visy_detector_pkg)
 
 add_compile_options(-std=c++11)
 
-find_package(catkin REQUIRED COMPONENTS roscpp message_generation std_msgs geometry_msgs sensor_msgs cv_bridge image_transport)
+find_package(catkin REQUIRED COMPONENTS roscpp message_generation std_msgs geometry_msgs sensor_msgs actionlib actionlib_msgs cv_bridge image_transport)
 find_package(OpenCV REQUIRED)
 
 add_message_files(FILES MetalChip.msg ConveyorSystem.msg)
 
-add_service_files(DIRECTORY srv FILES DetectConveyorSystem.srv StartMetalChipDetector.srv StopMetalChipDetector.srv SelectImage.srv)
+add_service_files(DIRECTORY srv FILES StartMetalChipDetector.srv StopMetalChipDetector.srv SelectImage.srv)
 
-generate_messages(DEPENDENCIES std_msgs geometry_msgs)
+add_action_files(DIRECTORY action FILES DetectConveyor.action)
 
-catkin_package(CATKIN_DEPENDS roscpp std_msgs geometry_msgs sensor_msgs cv_bridge image_transport)
+generate_messages(DEPENDENCIES std_msgs geometry_msgs actionlib_msgs)
+
+catkin_package(CATKIN_DEPENDS roscpp std_msgs geometry_msgs sensor_msgs actionlib_msgs cv_bridge image_transport)
 
 include_directories(${catkin_INCLUDE_DIRS})
 

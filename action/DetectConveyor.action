@@ -1,0 +1,8 @@
+#goal definition
+uint32 loops
+---
+#result definition
+bool detected
+---
+#feedback
+uint32 counter

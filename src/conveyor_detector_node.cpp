@@ -6,14 +6,10 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/opencv.hpp>
 #include <vector>
-#include "visy_detector_pkg/DetectConveyorSystem.h"
+#include "visy_detector_pkg/DetectConveyorAction.h"
 #include "visy_detector_pkg/ConveyorSystem.h"
+#include <actionlib/server/simple_action_server.h>
 
-/*static const std::string OPENCV_WINDOW1 = "Image window1";
-static const std::string OPENCV_WINDOW2 = "Image window2";
-static const std::string OPENCV_WINDOW3 = "Image window3";
-static const std::string OPENCV_WINDOW4 = "Image window4";
-static const std::string OPENCV_WINDOW5 = "Image window5";*/
 using namespace cv;
 using namespace std;
 
@@ -21,6 +17,11 @@ class ConveyorDetectorNode
 {
   ros::NodeHandle nh;
   image_transport::ImageTransport it;
+
+  actionlib::SimpleActionServer<visy_detector_pkg::DetectConveyorAction> as_;
+  visy_detector_pkg::DetectConveyorFeedback feedback_;
+  visy_detector_pkg::DetectConveyorResult result_;
+
   image_transport::Subscriber image_sub_;
   cv::Mat imagework,imagesrc,imagegray,imagehsv;
   cv::Mat saturation, saturationf32,value, value32,chroma;
@@ -38,35 +39,42 @@ class ConveyorDetectorNode
   sensor_msgs::ImagePtr imageMsg;
 
 public:
-  ConveyorDetectorNode(): it(nh){
-    detectConveyorSystemService = nh.advertiseService("detect_conveyor_system", &ConveyorDetectorNode::detectConveyorSystemCB,this);
+  ConveyorDetectorNode():
+    it(nh),
+    as_(nh, "detect_conveyor", boost::bind(&ConveyorDetectorNode::detectConveyorSystemCB, this, _1), false)
+  {
     conveyorSystemRectPub = nh.advertise<visy_detector_pkg::ConveyorSystem>("conveyor_system_rect", 1);
+    as_.start();
   }
   ~ConveyorDetectorNode(){
     image_sub_.shutdown();
     imagePub.shutdown();
   }
 
-  bool detectConveyorSystemCB(visy_detector_pkg::DetectConveyorSystem::Request  &req, visy_detector_pkg::DetectConveyorSystem::Response &res)
+  void detectConveyorSystemCB(const visy_detector_pkg::DetectConveyorGoalConstPtr &goal)
   {
     image_sub_ = it.subscribe("/raspicam_node/image", 1, &ConveyorDetectorNode::imageCb, this);
     imagePub = it.advertise("visy_image", 1);
 
-    //system("rosrun dynamic_reconfigure dynparam set_from_parameters raspicam_node contrast 50");
-    //system("rosrun dynamic_reconfigure dynparam set_from_parameters raspicam_node sharpness 0");
-    //system("rosrun dynamic_reconfigure dynparam set_from_parameters raspicam_node brightness 60");
-    //system("rosrun dynamic_reconfigure dynparam set_from_parameters raspicam_node saturation 0");
-    //system("rosrun dynamic_reconfigure dynparam set_from_parameters raspicam_node ISO 700");
-    //system("rosrun dynamic_reconfigure dynparam set_from_parameters raspicam_node exposure_compensation 0");
-
     conveyorSystemRect.clear();
     conveyorSystemRect = vector<Point2d>{Point2d(),Point2d(),Point2d(),Point2d()};
     detected = false;
+    conveyorSystemRectMsg.detected = detected;
     done = false;
-    conveyorSystemRectMsg.autodetected = detected;
-    conveyorSystemRectMsg.done = done;
     counter = 0;
-    return true;
+    searchLoops = goal->loops;
+
+    while(counter<searchLoops)
+    {
+      if (as_.isPreemptRequested() || !ros::ok())
+      {
+        as_.setPreempted();
+      }
+      feedback_.counter = counter;
+      as_.publishFeedback(feedback_);
+    }
+    result_.detected = detected;
+    as_.setSucceeded(result_);
   }
 
   void imageCb(const sensor_msgs::ImageConstPtr& image)
@@ -177,9 +185,6 @@ public:
 
       }
       counter++;
-      char str[50];
-      sprintf(str,"Loop %d of %d",counter,searchLoops);
-      putText(imagesrc, str, Point(10,10), FONT_HERSHEY_PLAIN, 4,  Scalar(0,255,0));
       imageMsg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imagesrc).toImageMsg();
       imagePub.publish(imageMsg);
 
@@ -187,8 +192,6 @@ public:
     else {
       if(detected == true){
         done=true;
-        conveyorSystemRectMsg.autodetected = detected;
-        conveyorSystemRectMsg.done = done;
       }
       else{
         conveyorSystemRect.at(0)=Point2f(0.0,200.0);
@@ -196,8 +199,6 @@ public:
         conveyorSystemRect.at(2)=Point2f(410.0,110.0);
         conveyorSystemRect.at(3)=Point2f(410.0,200.0);
         done=true;
-        conveyorSystemRectMsg.autodetected = detected;
-        conveyorSystemRectMsg.done = done;
       }
       for(auto & points:conveyorSystemRectMsg.rect){
         points.x = conveyorSystemRect.front().x;
@@ -206,6 +207,7 @@ public:
       }
       image_sub_.shutdown();
       imagePub.shutdown();
+      conveyorSystemRectMsg.detected = detected;
     }
     cv::waitKey(3);
   }

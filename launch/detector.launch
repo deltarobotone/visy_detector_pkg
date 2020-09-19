@@ -33,9 +33,9 @@
     </node>
 
     <node name="$(anon dynparam)" pkg="dynamic_reconfigure" type="dynparam" args="set_from_parameters raspicam_node">
-      <param name="contrast" type="int" value="50" />
+      <param name="contrast" type="int" value="0" />
       <param name="sharpness" type="int" value="0" />
-      <param name="brightness" type="int" value="60" />
+      <param name="brightness" type="int" value="50" />
       <param name="saturation" type="int" value="0" />
       <param name="ISO" type="int" value="700" />
       <param name="exposure_compensation" type="int" value="0" />

@@ -11,6 +11,8 @@
 #include "visy_detector_pkg/SelectImage.h"
 #include "visy_detector_pkg/MetalChip.h"
 #include "visy_detector_pkg/ConveyorSystem.h"
+#include "visy_neopixel_pkg/LightCtrl.h"
+#include "visy_neopixel_pkg/Neopixel.h"
 
 using namespace cv;
 using namespace std;
@@ -31,6 +33,8 @@ class MetalChipDetectorNode
   sensor_msgs::Image imageLast;
   image_transport::Publisher imagePub;
   sensor_msgs::ImagePtr imageMsg;
+  ros::ServiceClient statusbarLightClient;
+  bool init=false;
 
   enum Image{DETECTED,SOURCE,HSV,CHROMA,ADAPTHRESH,ERODE,DILATE,MEDIAN};
   ulong selectedImage = DETECTED;
@@ -41,6 +45,7 @@ public:
     metalChipPub = nh.advertise<visy_detector_pkg::MetalChip>("metal_chip", 1);
     startMetalChipDetectorService = nh.advertiseService("start_metalchip_detector", &MetalChipDetectorNode::startMetalChipDetectorCB,this);
     stopMetalChipDetectorService = nh.advertiseService("stop_metalchip_detector", &MetalChipDetectorNode::stopMetalChipDetectorCB,this);
+    statusbarLightClient = nh.serviceClient<visy_neopixel_pkg::LightCtrl>("/status_bar_node/light_ctrl");
   }
   ~MetalChipDetectorNode(){
     image_sub_.shutdown();
@@ -105,97 +110,115 @@ public:
       p.y = point.y;
       conveyorSystemRect.push_back(p);
     }
+    if (init==false){
+      visy_neopixel_pkg::LightCtrl srv;
+      visy_neopixel_pkg::Neopixel pixel;
+      if(conveyorSystem->detected==true){
+        pixel.r = 0;
+        pixel.g = 255;
+        pixel.b = 0;
+      }
+      else{
+        pixel.r = 255;
+        pixel.g = 255;
+        pixel.b = 0;
+      }
+      srv.request.ctrl = srv.request.SPIN_DOUBLE_TOP;
+      srv.request.pixel = pixel;
+      statusbarLightClient.call(srv);
+    }
+    init=true;
   }
 
   void imageCb(const sensor_msgs::ImageConstPtr& image){
+    if(init==true){
+      cv_bridge::CvImagePtr cv_ptr;
 
-    cv_bridge::CvImagePtr cv_ptr;
+      try{cv_ptr = cv_bridge::toCvCopy(image, sensor_msgs::image_encodings::BGR8);}
+      catch (cv_bridge::Exception& e){return;}
 
-    try{cv_ptr = cv_bridge::toCvCopy(image, sensor_msgs::image_encodings::BGR8);}
-    catch (cv_bridge::Exception& e){return;}
+      imagework = cv_ptr->image.clone();
+      imagesrc = cv_ptr->image.clone();
 
-    imagework = cv_ptr->image.clone();
-    imagesrc = cv_ptr->image.clone();
+      if(selectedImage==Image::SOURCE)publishImage(imagework,"bgr8");
 
-    if(selectedImage==Image::SOURCE)publishImage(imagework,"bgr8");
+      cv::Rect roi(conveyorSystemRect[0],conveyorSystemRect[2]);
 
-    cv::Rect roi(conveyorSystemRect[0],conveyorSystemRect[2]);
+      imagework = imagesrc(roi);
 
-    imagework = imagesrc(roi);
+      cv::cvtColor(imagework, imagehsv, CV_BGR2HSV);
+      if(selectedImage==Image::HSV)publishImage(imagehsv,"bgr8");
 
-    cv::cvtColor(imagework, imagehsv, CV_BGR2HSV);
-    if(selectedImage==Image::HSV)publishImage(imagehsv,"bgr8");
+      split(imagehsv, imagesplit);
 
-    split(imagehsv, imagesplit);
+      saturation = imagesplit[1].clone();
+      saturation.convertTo(saturationf32, CV_32FC1, 1. / 255);
 
-    saturation = imagesplit[1].clone();
-    saturation.convertTo(saturationf32, CV_32FC1, 1. / 255);
+      value = imagesplit[2].clone();
+      value.convertTo(value32, CV_32FC1, 1. / 255);
 
-    value = imagesplit[2].clone();
-    value.convertTo(value32, CV_32FC1, 1. / 255);
+      add(value32, saturationf32, chroma);
 
-    add(value32, saturationf32, chroma);
+      chroma.convertTo(chroma, CV_8UC1, 200);
 
-    chroma.convertTo(chroma, CV_8UC1, 200);
+      imagework = chroma.clone();
 
-    imagework = chroma.clone();
+      if(selectedImage==Image::CHROMA)publishImage(imagework,"mono8");
 
-    if(selectedImage==Image::CHROMA)publishImage(imagework,"mono8");
+      cv::adaptiveThreshold(imagework,imagework,255,cv::ADAPTIVE_THRESH_GAUSSIAN_C,cv::THRESH_BINARY,5,2);
 
-    cv::adaptiveThreshold(imagework,imagework,255,cv::ADAPTIVE_THRESH_GAUSSIAN_C,cv::THRESH_BINARY,5,2);
+      if(selectedImage==Image::ADAPTHRESH)publishImage(imagework,"mono8");
 
-    if(selectedImage==Image::ADAPTHRESH)publishImage(imagework,"mono8");
+      cv::Mat Element = getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(8, 8), cv::Point(-1, -1));
 
-    cv::Mat Element = getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(8, 8), cv::Point(-1, -1));
+      cv::erode(imagework, imagework, Element);
+      if(selectedImage==Image::DILATE)publishImage(imagework,"mono8");
 
-    cv::erode(imagework, imagework, Element);
-    if(selectedImage==Image::DILATE)publishImage(imagework,"mono8");
+      cv::dilate(imagework, imagework, Element);
+      if(selectedImage==Image::ERODE)publishImage(imagework,"mono8");
 
-    cv::dilate(imagework, imagework, Element);
-    if(selectedImage==Image::ERODE)publishImage(imagework,"mono8");
+      medianBlur(imagework, imagework, 3);
+      if(selectedImage==Image::MEDIAN)publishImage(imagework,"mono8");
 
-    medianBlur(imagework, imagework, 3);
-    if(selectedImage==Image::MEDIAN)publishImage(imagework,"mono8");
+      std::vector<std::vector<cv::Point> > contours;
+      std::vector<cv::Vec4i> hierarchy;
+      cv::findContours( imagework, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE );
 
-    std::vector<std::vector<cv::Point> > contours;
-    std::vector<cv::Vec4i> hierarchy;
-    cv::findContours( imagework, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE );
+      int i = 0;
+      for( auto const& contour:contours){
 
-    int i = 0;
-    for( auto const& contour:contours){
+        double area = contourArea(contour);
+        double contourLength = arcLength(contour, true);
+        double formfactorCircle = ((4 * 3.141 * area) / pow(contourLength,2.0));
 
-      double area = contourArea(contour);
-      double contourLength = arcLength(contour, true);
-      double formfactorCircle = ((4 * 3.141 * area) / pow(contourLength,2.0));
+        if (formfactorCircle > 0.80 && formfactorCircle < 0.95 && area > 2900.0){
+          Moments M = moments(contour);
+          Point2d central = Point2d(M.m10 / M.m00, M.m01 / M.m00);
+          RotatedRect rects = minAreaRect(contour);
 
-      if (formfactorCircle > 0.80 && formfactorCircle < 0.95 && area > 2900.0){
-        Moments M = moments(contour);
-        Point2d central = Point2d(M.m10 / M.m00, M.m01 / M.m00);
-        RotatedRect rects = minAreaRect(contour);
+          getRectSubPix(imagehsv, rects.size, rects.center, imagework);
 
-        getRectSubPix(imagehsv, rects.size, rects.center, imagework);
+          visy_detector_pkg::MetalChip metalchipMsg;
+          metalchipMsg.hue = getHueValue(imagework);
+          metalchipMsg.pos[0] = uint(central.x);
+          metalchipMsg.pos[1] = uint(central.y);
+          metalchipMsg.imageTime = image->header.stamp;
 
-        visy_detector_pkg::MetalChip metalchipMsg;
-        metalchipMsg.hue = getHueValue(imagework);
-        metalchipMsg.pos[0] = uint(central.x);
-        metalchipMsg.pos[1] = uint(central.y);
-        metalchipMsg.imageTime = image->header.stamp;
-
-        metalchipMsg.header.stamp = ros::Time::now();
-        metalChipPub.publish(metalchipMsg);
-        Point2d srcCentral;
-        srcCentral.x = roi.x + central.x;
-        srcCentral.y = roi.y + central.y;
-        cv::Point os(roi.x, roi.y);
-        drawContours(imagesrc,contours,i,Scalar(0, 255, 0), 2,LINE_8,noArray(),INT_MAX, os);
-        circle(imagesrc, srcCentral, 4, Scalar(0, 255, 0), 2);
+          metalchipMsg.header.stamp = ros::Time::now();
+          metalChipPub.publish(metalchipMsg);
+          Point2d srcCentral;
+          srcCentral.x = roi.x + central.x;
+          srcCentral.y = roi.y + central.y;
+          cv::Point os(roi.x, roi.y);
+          drawContours(imagesrc,contours,i,Scalar(0, 255, 0), 2,LINE_8,noArray(),INT_MAX, os);
+          circle(imagesrc, srcCentral, 4, Scalar(0, 255, 0), 2);
+        }
+        i++;
       }
-      i++;
+      rectangle(imagesrc,roi,Scalar(255,255,255), 2, 8);
+      if(selectedImage==Image::DETECTED)publishImage(imagesrc,"bgr8");
+      cv::waitKey(3);
     }
-    rectangle(imagesrc,roi,Scalar(255,255,255), 2, 8);
-    if(selectedImage==Image::DETECTED)publishImage(imagesrc,"bgr8");
-    cv::waitKey(3);
-
   }
 
   void publishImage(cv::Mat &img, string format){

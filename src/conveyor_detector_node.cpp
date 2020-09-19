@@ -9,6 +9,8 @@
 #include "visy_detector_pkg/DetectConveyorAction.h"
 #include "visy_detector_pkg/ConveyorSystem.h"
 #include <actionlib/server/simple_action_server.h>
+#include "visy_neopixel_pkg/PixelCtrl.h"
+#include "visy_neopixel_pkg/Neopixel.h"
 
 using namespace cv;
 using namespace std;
@@ -37,6 +39,7 @@ class ConveyorDetectorNode
   visy_detector_pkg::ConveyorSystem conveyorSystemRectMsg;
   image_transport::Publisher imagePub;
   sensor_msgs::ImagePtr imageMsg;
+  ros::ServiceClient statusbarPixelClient;
 
 public:
   ConveyorDetectorNode():
@@ -44,6 +47,7 @@ public:
     as_(nh, "detect_conveyor", boost::bind(&ConveyorDetectorNode::detectConveyorSystemCB, this, _1), false)
   {
     conveyorSystemRectPub = nh.advertise<visy_detector_pkg::ConveyorSystem>("conveyor_system_rect", 1);
+    statusbarPixelClient = nh.serviceClient<visy_neopixel_pkg::PixelCtrl>("/status_bar_node/pixel_ctrl");
     as_.start();
   }
   ~ConveyorDetectorNode(){
@@ -150,6 +154,8 @@ public:
         else pointsR.push_back(point);
       }
 
+      visy_neopixel_pkg::Neopixel pixel;
+
       if(points.size()==8)
       {
         float meanL = 0.0F;
@@ -180,14 +186,26 @@ public:
           circle(imagesrc, conveyorSystemRect[i],1, Scalar(255,0,0), 4, 8);
           for( size_t j = 0; j < 4; j++ )line( imagesrc, conveyorSystemRect[j], conveyorSystemRect[(j+1)%4], Scalar(0,255,0), 2, 8 );
         }
-
         detected = true;
-
+        pixel.r = 0;
+        pixel.g = 255;
+        pixel.b = 0;
+      }
+      else {
+        pixel.r = 255;
+        pixel.g = 255;
+        pixel.b = 0;
       }
       counter++;
       imageMsg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imagesrc).toImageMsg();
       imagePub.publish(imageMsg);
 
+      visy_neopixel_pkg::PixelCtrl srv;
+      if (counter<=10){
+        srv.request.pos = int(counter);
+        srv.request.pixel = pixel;
+        statusbarPixelClient.call(srv);
+      }
     }
     else {
       if(detected == true){

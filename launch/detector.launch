@@ -1,10 +1,10 @@
 <launch>
    
-    <node type="conveyor_detector_node" pkg="visy_detector_pkg" name="conveyor_detector_node" output="screen" respawn="true">
+    <node type="conveyor_detector_node" pkg="visy_detector_pkg" name="conveyor_detector_node" output="screen">
       <param name="image_transport" value="compressed" />
     </node>
 
-    <node type="metal_chip_detector_node" pkg="visy_detector_pkg" name="metal_chip_detector_node" output="screen" respawn="true">
+    <node type="metal_chip_detector_node" pkg="visy_detector_pkg" name="metal_chip_detector_node" output="screen">
       <param name="image_transport" value="compressed" />
     </node>
 

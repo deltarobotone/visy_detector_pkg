@@ -204,6 +204,7 @@ public:
       if (counter<=10){
         srv.request.pos = int(counter);
         srv.request.pixel = pixel;
+        srv.request.cleanup = false;
         statusbarPixelClient.call(srv);
       }
     }

@@ -12,6 +12,6 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: Clone visy_neopixel_package
-        run: git clone https://github.com/deltarobotone/visy_neopixel_pkg.git
+        run: cd /root/src && git clone https://github.com/deltarobotone/visy_neopixel_pkg.git
       - uses: 'ros-industrial/industrial_ci@master'
         env: ${{matrix.env}}

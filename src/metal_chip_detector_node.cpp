@@ -36,6 +36,7 @@ class MetalChipDetectorNode
   ros::ServiceClient statusbarLightClient;
   bool init=false;
   int check=0;
+  bool active=false;
 
   enum Image{DETECTED,SOURCE,HSV,CHROMA,ADAPTHRESH,ERODE,DILATE,MEDIAN};
   ulong selectedImage = DETECTED;
@@ -56,6 +57,7 @@ public:
 
   bool startMetalChipDetectorCB(visy_detector_pkg::StartMetalChipDetector::Request  &req, visy_detector_pkg::StartMetalChipDetector::Response &res){
     init=false;
+    active=true;
     check=0;
     selectImageService = nh.advertiseService("select_image", &MetalChipDetectorNode::selectImageCB,this);
     imagePub = it.advertise("visy_image", 1);
@@ -64,6 +66,7 @@ public:
   }
   bool stopMetalChipDetectorCB(visy_detector_pkg::StopMetalChipDetector::Request  &req, visy_detector_pkg::StopMetalChipDetector::Response &res){
     init=false;
+    active=false;
     check=0;
     image_sub_.shutdown();
     imagePub.shutdown();
@@ -115,7 +118,7 @@ public:
       p.y = point.y;
       conveyorSystemRect.push_back(p);
     }
-    if (check>=3) //check 3 times to get the newest data
+    if (check>=3 && active == true) //check 3 times to get the newest data
     {
       if (init==false){
         visy_neopixel_pkg::LightCtrl srv;

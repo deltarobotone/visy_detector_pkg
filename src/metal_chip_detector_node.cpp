@@ -35,6 +35,7 @@ class MetalChipDetectorNode
   sensor_msgs::ImagePtr imageMsg;
   ros::ServiceClient statusbarLightClient;
   bool init=false;
+  int check=0;
 
   enum Image{DETECTED,SOURCE,HSV,CHROMA,ADAPTHRESH,ERODE,DILATE,MEDIAN};
   ulong selectedImage = DETECTED;
@@ -54,12 +55,16 @@ public:
   }
 
   bool startMetalChipDetectorCB(visy_detector_pkg::StartMetalChipDetector::Request  &req, visy_detector_pkg::StartMetalChipDetector::Response &res){
+    init=false;
+    check=0;
     selectImageService = nh.advertiseService("select_image", &MetalChipDetectorNode::selectImageCB,this);
     imagePub = it.advertise("visy_image", 1);
     image_sub_ = it.subscribe("/raspicam_node/image", 1, &MetalChipDetectorNode::imageCb, this);
     return true;
   }
   bool stopMetalChipDetectorCB(visy_detector_pkg::StopMetalChipDetector::Request  &req, visy_detector_pkg::StopMetalChipDetector::Response &res){
+    init=false;
+    check=0;
     image_sub_.shutdown();
     imagePub.shutdown();
     selectImageService.shutdown();
@@ -110,24 +115,28 @@ public:
       p.y = point.y;
       conveyorSystemRect.push_back(p);
     }
-    if (init==false){
-      visy_neopixel_pkg::LightCtrl srv;
-      visy_neopixel_pkg::Neopixel pixel;
-      if(conveyorSystem->detected==true){
-        pixel.r = 0;
-        pixel.g = 255;
-        pixel.b = 0;
+    if (check>=3) //check 3 times to get the newest data
+    {
+      if (init==false){
+        visy_neopixel_pkg::LightCtrl srv;
+        visy_neopixel_pkg::Neopixel pixel;
+        if(conveyorSystem->detected==true){
+          pixel.r = 0;
+          pixel.g = 255;
+          pixel.b = 0;
+        }
+        else{
+          pixel.r = 255;
+          pixel.g = 255;
+          pixel.b = 0;
+        }
+        srv.request.ctrl = srv.request.SPIN_DOUBLE_TOP;
+        srv.request.pixel = pixel;
+        statusbarLightClient.call(srv);
       }
-      else{
-        pixel.r = 255;
-        pixel.g = 255;
-        pixel.b = 0;
-      }
-      srv.request.ctrl = srv.request.SPIN_DOUBLE_TOP;
-      srv.request.pixel = pixel;
-      statusbarLightClient.call(srv);
+      init=true;
     }
-    init=true;
+    else check++;
   }
 
   void imageCb(const sensor_msgs::ImageConstPtr& image){

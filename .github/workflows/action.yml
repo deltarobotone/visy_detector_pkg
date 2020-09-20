@@ -11,6 +11,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-      - uses: 'deltarobotone/visy_neopixel_pkg@master'
+      - uses: 'deltarobotone/visy_neopixel_pkg/workflows@master'
       - uses: 'ros-industrial/industrial_ci@master'
         env: ${{matrix.env}}

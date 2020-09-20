@@ -10,7 +10,11 @@ jobs:
           - {ROS_DISTRO: melodic, ROS_REPO: main}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
-      - uses: 'deltarobotone/visy_neopixel_pkg/workflows@master'
+      - uses: actions/checkout@v2
+      - name: Checkout tools repo
+        uses: actions/checkout@v2
+        with:
+          repository: deltarobotone/visy_neopixel_pkg
+          path: visy_neopixel_pkg
       - uses: 'ros-industrial/industrial_ci@master'
         env: ${{matrix.env}}

@@ -1,0 +1,4 @@
+- git: 
+    local-name: visy_neopixel_pkg
+    uri: https://github.com/deltarobotone/visy_neopixel_pkg
+    

@@ -46,7 +46,9 @@ public:
     it(nh),
     as_(nh, "detect_conveyor", boost::bind(&ConveyorDetectorNode::detectConveyorSystemCB, this, _1), false)
   {
+    //Publish detected rectangle of conveyor system. Corners of rectangle via points (x,y) in geometry message.
     conveyorSystemRectPub = nh.advertise<visy_detector_pkg::ConveyorSystem>("conveyor_system_rect", 1);
+    //Control statusbar of visy to inform user about the detection state. Green for detected. Yellow for not detected.
     statusbarPixelClient = nh.serviceClient<visy_neopixel_pkg::PixelCtrl>("/status_bar_node/pixel_ctrl");
     as_.start();
   }
@@ -57,7 +59,9 @@ public:
 
   void detectConveyorSystemCB(const visy_detector_pkg::DetectConveyorGoalConstPtr &goal)
   {
+    //Get actual image from visy camera (raspicam) using raspicam node.
     image_sub_ = it.subscribe("/raspicam_node/image", 1, &ConveyorDetectorNode::imageCb, this);
+    //Publish image at the end of a detection loop including rectange for conveor system if it is detected.
     imagePub = it.advertise("visy_image", 1);
 
     conveyorSystemRect.clear();

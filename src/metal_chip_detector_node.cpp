@@ -43,10 +43,15 @@ class MetalChipDetectorNode
 
 public:
   MetalChipDetectorNode(): it(nh){
+    //Get detected rectangle of conveyor system from conveyor detector node.
     conveyorSystemRectSub = nh.subscribe("conveyor_system_rect", 1, &MetalChipDetectorNode::conveyorSystemRectCb,this);
+    //Publish date of detected metal chip including colour as hue value, position (pixel), image timestamp and timestamp after image processing.
     metalChipPub = nh.advertise<visy_detector_pkg::MetalChip>("metal_chip", 1);
+    //Starts metal chip detector. Requires detected conveyor system.
     startMetalChipDetectorService = nh.advertiseService("start_metalchip_detector", &MetalChipDetectorNode::startMetalChipDetectorCB,this);
+    //Stops metal chip detector.
     stopMetalChipDetectorService = nh.advertiseService("stop_metalchip_detector", &MetalChipDetectorNode::stopMetalChipDetectorCB,this);
+    //Control statusbar of visy to inform user about the detection state. Spinning light for an active detector or full light using detected colour.
     statusbarLightClient = nh.serviceClient<visy_neopixel_pkg::LightCtrl>("/status_bar_node/light_ctrl");
   }
   ~MetalChipDetectorNode(){
@@ -59,8 +64,11 @@ public:
     init=false;
     active=true;
     check=0;
+    //Select image at processing state to provide insights at hsi, chroma and threshold states.
     selectImageService = nh.advertiseService("select_image", &MetalChipDetectorNode::selectImageCB,this);
+    //Publish image at the end of a detection loop. Image could be changed in diffenent image processing states via service.
     imagePub = it.advertise("visy_image", 1);
+    //Get actual image from visy camera (raspicam) using raspicam node.
     image_sub_ = it.subscribe("/raspicam_node/image", 1, &MetalChipDetectorNode::imageCb, this);
     return true;
   }

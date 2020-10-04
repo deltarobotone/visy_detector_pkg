@@ -8,7 +8,7 @@ ROS package for vision system (visy) to detect conveyor system and metal chips.
 
 ### conveyor_detector_node
 
-Ros node detects conveyor system via image processing using openCV3.
+ROS node detects conveyor system via image processing using openCV3.
 
 #### Published topics
 
@@ -40,7 +40,7 @@ Get actual image from visy camera (raspicam) using raspicam node.
 
 ### metal_chip_detector_node
 
-Ros node detects metal chips on conveyor system via image processing using openCV3. Detected metalchip data like colour, position and timestamps are used by other nodes like grasp planner.
+ROS node detects metal chips on conveyor system via image processing using openCV3. Detected metalchip data like colour, position and timestamps are used by other nodes like grasp planner.
 
 #### Advertised Services
 

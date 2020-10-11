@@ -4,6 +4,17 @@ ROS package for vision system (visy) to detect conveyor system and metal chips.
 
 ![CI](https://github.com/deltarobotone/visy_detector_pkg/workflows/CI/badge.svg?branch=master) [![Codacy Badge](https://app.codacy.com/project/badge/Grade/f52da64a87c54a66a092bf198cd6c83d)](https://www.codacy.com/gh/deltarobotone/visy_detector_pkg?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=deltarobotone/visy_detector_pkg&amp;utm_campaign=Badge_Grade)
 
+This package is part of the Visy ROS workspace
+
+[<img src="https://raw.githubusercontent.com/deltarobotone/image_database/master/visy_doc/visy_doc%20(1).PNG" width="1000">](https://raw.githubusercontent.com/deltarobotone/image_database/master/visy_doc/visy_doc%20(1).PNG)
+
+- [visy_sorting_app_pkg](https://github.com/deltarobotone/visy_sorting_app_pkg)
+- [visy_detector_pkg](https://github.com/deltarobotone/visy_detector_pkg)
+- [one_easy_protocol_pkg](https://github.com/deltarobotone/one_easy_protocol_pkg)
+- [one_easy_protocol_pkg](https://github.com/deltarobotone/one_easy_protocol_pkg)
+- [visy_neopixel_pkg](https://github.com/deltarobotone/visy_neopixel_pkg)
+- [raspicam_node](https://github.com/UbiquityRobotics/raspicam_node)
+
 ## Nodes
 
 ### conveyor_detector_node
